@@ -21,12 +21,29 @@ public class AuthController {
     }
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody Map<String, String> body) {
-        var u = userService.register(body.get("username"), body.get("email"), body.get("password"));
-        return ResponseEntity.ok(Map.of("id", u.getId(), "username", u.getUsername()));
+        String username = body.get("username");
+        String email = body.getOrDefault("email", "");
+        String password = body.get("password");
+        if (username == null || username.trim().isEmpty() || password == null || password.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "invalid_input"));
+        }
+        try {
+            var u = userService.register(username.trim(), email, password);
+            return ResponseEntity.ok(Map.of("id", u.getId(), "username", u.getUsername()));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(409).body(Map.of("error", "username_exists"));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", "server_error"));
+        }
     }
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> body) {
-        var opt = userService.login(body.get("username"), body.get("password"));
+        String username = body.get("username");
+        String password = body.get("password");
+        if (username == null || username.trim().isEmpty() || password == null || password.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "invalid_input"));
+        }
+        var opt = userService.login(username, password);
         if (opt.isEmpty()) return ResponseEntity.status(401).build();
         String token = jwtUtil.generate(opt.get().getUsername());
         return ResponseEntity.ok(Map.of("token", token));
