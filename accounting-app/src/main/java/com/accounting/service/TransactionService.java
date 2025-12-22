@@ -4,6 +4,9 @@ import com.accounting.filter.FilterRule;
 import com.accounting.model.Transaction;
 import com.accounting.storage.StorageManager;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonSerializer;
 import com.google.gson.reflect.TypeToken;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -28,7 +31,9 @@ public class TransactionService {
     
     public TransactionService(StorageManager storageManager) {
         this.storageManager = storageManager;
-        this.gson = new Gson();
+        JsonSerializer<LocalDateTime> lts = (src, typeOfSrc, context) -> new com.google.gson.JsonPrimitive(src.toString());
+        JsonDeserializer<LocalDateTime> ltd = (json, typeOfT, context) -> LocalDateTime.parse(json.getAsString());
+        this.gson = new GsonBuilder().registerTypeAdapter(LocalDateTime.class, lts).registerTypeAdapter(LocalDateTime.class, ltd).create();
         this.transactions = new ArrayList<>();
         loadTransactions();
     }
