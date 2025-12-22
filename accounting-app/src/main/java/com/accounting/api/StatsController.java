@@ -37,5 +37,30 @@ public class StatsController {
         Map<String, Double> m = statisticService.getExpensesByCategory(user, YearMonth.of(year, month));
         return ResponseEntity.ok(m);
     }
-}
 
+    @GetMapping("/predict")
+    public ResponseEntity<Map<String, Object>> predict(@RequestParam(defaultValue = "12") int months,
+                                                       Authentication auth) {
+        String user = auth != null ? auth.getName() : null;
+        double v = statisticService.predictNextMonthExpense(user, months);
+        return ResponseEntity.ok(Map.of("months", months, "nextExpense", v));
+    }
+
+    @GetMapping("/trend")
+    public ResponseEntity<Map<String, Object>> trend(@RequestParam(defaultValue = "12") int months,
+                                                     Authentication auth) {
+        String user = auth != null ? auth.getName() : null;
+        double t = statisticService.getExpenseTrend(user, months);
+        double avg = statisticService.getAverageMonthlyExpense(user, months);
+        return ResponseEntity.ok(Map.of("months", months, "trendPercent", t, "avgExpense", avg));
+    }
+
+    @GetMapping("/month")
+    public ResponseEntity<Map<String, Object>> month(@RequestParam int year,
+                                                     @RequestParam int month,
+                                                     Authentication auth) {
+        String user = auth != null ? auth.getName() : null;
+        Map<String, Object> m = statisticService.getMonthlyStatistics(user, year, month);
+        return ResponseEntity.ok(m);
+    }
+}

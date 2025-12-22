@@ -6,6 +6,7 @@
 <title>账目 · SwissSpa Ledger</title>
 <style>
 :root{--bg:#f7f8f9;--card:#ffffff;--text:#0f172a;--muted:#64748b;--line:#e5e7eb;--accent:#0a84ff}
+[data-theme="dark"]{--bg:#0b0e11;--card:#12151a;--text:#e5e7eb;--muted:#94a3b8;--line:#2a2f37;--accent:#0a84ff}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,system-ui}
 .container{max-width:1080px;margin:0 auto;padding:24px}
@@ -39,6 +40,20 @@ input:focus,select:focus{border-color:var(--accent)}
       <a href="/trends.html">趋势</a>
       <a href="/charts.html">图表</a>
       <a href="/login.html">切换账号</a>
+      <a href="#" id="themeToggle">暗色</a>
+    </div>
+  </div>
+
+  <div class="surface" style="margin-bottom:16px">
+    <div class="section-title">本月概览</div>
+    <div class="grid-4">
+      <div><label>净额</label><input id="sumNet" disabled></div>
+      <div><label>总收入</label><input id="sumInc" disabled></div>
+      <div><label>总支出</label><input id="sumExp" disabled></div>
+      <div><label>预算使用率</label><input id="sumRate" disabled></div>
+    </div>
+    <div class="stack" style="margin-top:8px">
+      <button class="btn" id="btnRefreshSummary">刷新概览</button>
     </div>
   </div>
 
@@ -84,6 +99,9 @@ input:focus,select:focus{border-color:var(--accent)}
 </div>
 
 <script>
+const savedTheme=localStorage.getItem('theme')||'light'
+document.documentElement.dataset.theme=savedTheme
+document.getElementById('themeToggle').onclick=(e)=>{e.preventDefault();const t=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=t;localStorage.setItem('theme',t)}
 const base='/api'
 const token=localStorage.getItem('jwt'); if(!token){location.href='/login.html'}
 let editingId=null
@@ -108,6 +126,10 @@ const fMax=document.getElementById('fMax')
 const fStart=document.getElementById('fStart')
 const fEnd=document.getElementById('fEnd')
 const fQ=document.getElementById('fQ')
+const sumNet=document.getElementById('sumNet')
+const sumInc=document.getElementById('sumInc')
+const sumExp=document.getElementById('sumExp')
+const sumRate=document.getElementById('sumRate')
 
 function buildQuery(){
   const p=new URLSearchParams()
@@ -137,6 +159,19 @@ async function loadTransactions(){
   }catch{txTbody.innerHTML='<tr><td colspan="6">加载失败</td></tr>'}
 }
 
+function nowYM(){const d=new Date(); return {year:d.getFullYear(),month:d.getMonth()+1}}
+async function loadSummary(){
+  try{
+    const ym=nowYM()
+    const ms=await fetchJSON(base+`/stats/month?year=${ym.year}&month=${ym.month}`)
+    sumNet.value=(ms.netAmount||0).toFixed(2)
+    sumInc.value=(ms.totalIncome||0).toFixed(2)
+    sumExp.value=(ms.totalExpense||0).toFixed(2)
+    const bu=await fetchJSON(base+`/budgets/usage?year=${ym.year}&month=${ym.month}`)
+    sumRate.value=(Math.round(((bu.rate||0)*1000))/10)+'%'
+  }catch{}
+}
+
 txTbody.onclick=async(e)=>{
   const btn=e.target.closest('button'); if(!btn) return
   const id=btn.getAttribute('data-id'); const action=btn.getAttribute('data-action')
@@ -147,7 +182,9 @@ txTbody.onclick=async(e)=>{
     window.scrollTo({top:0,behavior:'smooth'})
   } else if(action==='del'){
     await fetch(base+'/transactions/'+id,{method:'DELETE',headers:{'Authorization':'Bearer '+token}})
-    loadTransactions()
+    loadTransactions();
+    try{localStorage.setItem('ledgerLastUpdate', String(Date.now()))}catch{}
+    try{loadSummary()}catch{}
   }
 }
 
@@ -159,14 +196,17 @@ document.getElementById('btnSaveTx').onclick=async()=>{
     await fetchJSON(base+'/transactions',{method:'POST',body:JSON.stringify(payload)})
   }
   editingId=null; txType.value='EXPENSE'; txAmount.value=''; txCategory.value=''; txDesc.value=''; txDate.value=''
-  loadTransactions()
+  loadTransactions();
+  try{localStorage.setItem('ledgerLastUpdate', String(Date.now()))}catch{}
+  try{loadSummary()}catch{}
 }
 document.getElementById('btnResetTx').onclick=()=>{editingId=null; txType.value='EXPENSE'; txAmount.value=''; txCategory.value=''; txDesc.value=''; txDate.value=''}
 
 document.getElementById('btnApplyFilters').onclick=()=>loadTransactions()
 document.getElementById('btnClearFilters').onclick=()=>{fCategory.value='';fType.value='';fMin.value='';fMax.value='';fStart.value='';fEnd.value='';fQ.value='';loadTransactions()}
+document.getElementById('btnRefreshSummary').onclick=()=>loadSummary()
 
-loadTransactions()
+loadTransactions(); loadSummary()
 </script>
 </body>
 </html>

@@ -6,6 +6,7 @@
 <title>趋势 · SwissSpa Ledger</title>
 <style>
 :root{--bg:#f7f8f9;--card:#ffffff;--text:#0f172a;--muted:#64748b;--line:#e5e7eb;--accent:#0a84ff}
+[data-theme="dark"]{--bg:#0b0e11;--card:#12151a;--text:#e5e7eb;--muted:#94a3b8;--line:#2a2f37;--accent:#0a84ff}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,system-ui}
 .container{max-width:1080px;margin:0 auto;padding:24px}
@@ -30,6 +31,7 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,B
       <a href="/trends.html">趋势</a>
       <a href="/charts.html">图表</a>
       <a href="/login.html">切换账号</a>
+      <a href="#" id="themeToggle">暗色</a>
     </div>
   </div>
 
@@ -40,6 +42,7 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,B
         <div class="metric"><span>平均月支出</span><strong id="avgExp">-</strong></div>
         <div class="metric"><span>趋势（相对首月）</span><strong id="trend">-</strong></div>
         <div class="metric"><span>预测下月支出</span><strong id="predict">-</strong></div>
+        <div class="metric"><span>本月净额</span><strong id="net">-</strong></div>
       </div>
       <div>
         <label style="color:var(--muted)">最近月份支出（折线）</label>
@@ -50,6 +53,9 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,B
 </div>
 
 <script>
+const savedTheme=localStorage.getItem('theme')||'light'
+document.documentElement.dataset.theme=savedTheme
+document.getElementById('themeToggle').onclick=(e)=>{e.preventDefault();const t=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=t;localStorage.setItem('theme',t)}
 const base='/api'
 const token=localStorage.getItem('jwt'); if(!token){location.href='/login.html'}
 async function fetchJSON(url,opts){
@@ -61,16 +67,13 @@ async function fetchJSON(url,opts){
 async function load(){
   const months=12
   const m=await fetchJSON(base+'/stats/monthly?months='+months)
-  const avg=(m.expenses.reduce((a,b)=>a+b,0)/m.expenses.length)||0
-  document.getElementById('avgExp').textContent=avg.toFixed(2)
-  // 简化趋势：最后一个相对第一个百分比
-  const first=m.expenses[0]||0, last=m.expenses[m.expenses.length-1]||0
-  const trend= first===0 ? (last>0?100:0) : ((last-first)/first*100)
-  document.getElementById('trend').textContent=(Math.round(trend*10)/10)+'%'
-  // 简化预测：使用最近三个月平均
-  const recent=m.expenses.slice(-3)
-  const predict=(recent.reduce((a,b)=>a+b,0)/(recent.length||1))
-  document.getElementById('predict').textContent=predict.toFixed(2)
+  const tr=await fetchJSON(base+'/stats/trend?months='+months)
+  const pr=await fetchJSON(base+'/stats/predict?months='+months)
+  const d=new Date(); const ms=await fetchJSON(base+`/stats/month?year=${d.getFullYear()}&month=${d.getMonth()+1}`)
+  document.getElementById('avgExp').textContent=(tr.avgExpense||0).toFixed(2)
+  document.getElementById('trend').textContent=((Math.round((tr.trendPercent||0)*10)/10)+'%')
+  document.getElementById('predict').textContent=((pr.nextExpense||0).toFixed(2))
+  document.getElementById('net').textContent=((ms.netAmount||0).toFixed(2))
   renderLine(m.expenses)
 }
 
@@ -84,6 +87,16 @@ function renderLine(values){
 }
 
 load()
+function setupAutoReload(){
+  let last = Number(localStorage.getItem('ledgerLastUpdate')||'0')
+  function check(){
+    const t = Number(localStorage.getItem('ledgerLastUpdate')||'0')
+    if(t>last){ last=t; load() }
+  }
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden) check()})
+  setInterval(check,5000)
+}
+setupAutoReload()
 </script>
 </body>
 </html>
