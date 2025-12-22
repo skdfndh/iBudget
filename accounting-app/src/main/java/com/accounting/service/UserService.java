@@ -5,8 +5,6 @@ import com.accounting.storage.StorageManager;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -22,29 +20,10 @@ public class UserService {
         load();
     }
     public User register(String username, String email, String password) {
-        if (username == null || username.isBlank()) {
-            throw new IllegalArgumentException("用户名不能为空");
-        }
-        if (email == null || email.isBlank()) {
-            throw new IllegalArgumentException("邮箱不能为空");
-        }
-        if (password == null || password.isBlank()) {
-            throw new IllegalArgumentException("密码不能为空");
-        }
-        if (password.length() < 6) {
-            throw new IllegalArgumentException("密码长度不能少于 6 位");
-        }
         if (findByUsername(username).isPresent()) {
-            throw new IllegalStateException("用户名已存在");
+            throw new IllegalStateException("username exists");
         }
-        // 简单的邮箱格式检查，避免明显错误
-        if (!email.contains("@") || !email.contains(".")) {
-            throw new IllegalArgumentException("邮箱格式不正确");
-        }
-
         User u = new User(username, email, encoder.encode(password));
-        // 设置创建时间，便于后续多端同步与审计
-        u.setCreatedAt(LocalDateTime.now().toString());
         users.add(u);
         save();
         return u;

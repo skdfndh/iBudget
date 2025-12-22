@@ -1,12 +1,11 @@
 package com.accounting.chart;
 
-import java.util.Map;
-
 import javafx.scene.Node;
 import javafx.scene.chart.BarChart;
 import javafx.scene.chart.CategoryAxis;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
+import java.util.Map;
 
 public class BarChartView implements Chart {
     private final BarChart<String, Number> chart;

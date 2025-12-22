@@ -1,14 +1,13 @@
 package com.accounting.service;
 
+import com.accounting.model.Transaction;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import com.accounting.model.Transaction;
 
 /**
  * 统计服务类
@@ -260,56 +259,6 @@ public class StatisticService {
         stats.put("transactionCount", monthTransactions.size());
         
         return stats;
-    }
-
-    /**
-     * 7 日移动平均支出（按日期升序返回）。
-     * 只有当某天及其前 6 天都有数据时，才计算该天的 7 日均值。
-     */
-    public Map<LocalDate, Double> get7DayMovingAverageExpense(String userId) {
-        List<Transaction> tx = transactionService.getTransactionsByUserId(userId);
-
-        // 按日期聚合每天总支出
-        Map<LocalDate, Double> daily = new HashMap<>();
-        for (Transaction t : tx) {
-            if (t.getDate() == null) continue;
-            if (t.getType() != Transaction.TransactionType.EXPENSE) continue;
-            LocalDate d = t.getDate().toLocalDate();
-            Double prev = daily.get(d);
-            daily.put(d, (prev == null ? 0.0 : prev) + t.getAmount());
-        }
-        if (daily.isEmpty()) return Map.of();
-
-        List<LocalDate> days = daily.keySet().stream()
-                .sorted()
-                .toList();
-
-        Map<LocalDate, Double> result = new LinkedHashMap<>();
-        for (int i = 6; i < days.size(); i++) {
-            double sum = 0;
-            for (int j = i - 6; j <= i; j++) {
-                sum += daily.getOrDefault(days.get(j), 0.0);
-            }
-            result.put(days.get(i), sum / 7.0);
-        }
-        return result;
-    }
-
-    /**
-     * 分类占比分析：返回当前指定月份各分类的支出占比（0-1）
-     */
-    public Map<String, Double> getCategoryExpenseRatio(String userId, YearMonth ym) {
-        Map<String, Double> byCat = getExpensesByCategory(userId, ym);
-        double total = byCat.values().stream().mapToDouble(Double::doubleValue).sum();
-        if (total <= 0) {
-            return byCat.entrySet().stream()
-                    .collect(Collectors.toMap(Map.Entry::getKey, e -> 0.0));
-        }
-        Map<String, Double> ratio = new HashMap<>();
-        for (Map.Entry<String, Double> e : byCat.entrySet()) {
-            ratio.put(e.getKey(), e.getValue() / total);
-        }
-        return ratio;
     }
 }
 

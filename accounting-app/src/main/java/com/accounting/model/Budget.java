@@ -1,10 +1,9 @@
 package com.accounting.model;
 
+import com.google.gson.annotations.SerializedName;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.UUID;
-
-import com.google.gson.annotations.SerializedName;
 
 /**
  * 预算实体类
@@ -21,27 +20,8 @@ public class Budget {
     private String categoryId; // null表示总预算
     
     @SerializedName("amount")
-    private double amount; // 预算金额（整个周期总额）
-
-    /**
-     * 预算周期类型：按日 / 周 / 月 / 年
-     */
-    public enum PeriodType {
-        DAY, WEEK, MONTH, YEAR
-    }
-
-    @SerializedName("periodType")
-    private PeriodType periodType = PeriodType.MONTH;
-
-    /**
-     * 周期的起始日期（包含）—— 使用公历 LocalDate
-     */
-    @SerializedName("startDate")
-    private LocalDate startDate;
-
-    /**
-     * 兼容原有“按月份”预算的字段（如果存在则优先用于 UI 的按月展示）
-     */
+    private double amount; // 预算金额
+    
     @SerializedName("year")
     private int year;
     
@@ -59,8 +39,6 @@ public class Budget {
         LocalDate now = LocalDate.now();
         this.year = now.getYear();
         this.month = now.getMonthValue();
-        this.startDate = now.withDayOfMonth(1);
-        this.periodType = PeriodType.MONTH;
     }
     
     public Budget(String userId, String categoryId, double amount, int year, int month) {
@@ -70,9 +48,6 @@ public class Budget {
         this.amount = amount;
         this.year = year;
         this.month = month;
-        // 默认按月预算，以该月第一天为周期起点
-        this.periodType = PeriodType.MONTH;
-        this.startDate = YearMonth.of(year, month).atDay(1);
     }
     
     public String getId() {
@@ -121,22 +96,6 @@ public class Budget {
     
     public void setMonth(int month) {
         this.month = month;
-    }
-
-    public PeriodType getPeriodType() {
-        return periodType;
-    }
-
-    public void setPeriodType(PeriodType periodType) {
-        this.periodType = periodType;
-    }
-
-    public LocalDate getStartDate() {
-        return startDate;
-    }
-
-    public void setStartDate(LocalDate startDate) {
-        this.startDate = startDate;
     }
     
     public YearMonth getYearMonth() {

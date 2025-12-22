@@ -1,16 +1,14 @@
 package com.accounting.api;
 
-import java.util.Map;
-
+import com.accounting.service.UserService;
+import com.accounting.storage.StorageManager;
+import com.accounting.util.JwtUtil;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import com.accounting.service.UserService;
-import com.accounting.storage.StorageManager;
-import com.accounting.util.JwtUtil;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -23,36 +21,31 @@ public class AuthController {
     }
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody Map<String, String> body) {
+        String username = body.get("username");
+        String email = body.getOrDefault("email", "");
+        String password = body.get("password");
+        if (username == null || username.trim().isEmpty() || password == null || password.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "invalid_input"));
+        }
         try {
-            var u = userService.register(body.get("username"), body.get("email"), body.get("password"));
-            return ResponseEntity.ok(Map.of(
-                    "id", u.getId(),
-                    "username", u.getUsername(),
-                    "email", u.getEmail()
-            ));
-        } catch (IllegalArgumentException e) {
-            // 参数错误，例如为空或格式不合法
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            var u = userService.register(username.trim(), email, password);
+            return ResponseEntity.ok(Map.of("id", u.getId(), "username", u.getUsername()));
         } catch (IllegalStateException e) {
-            // 业务冲突，例如用户名已存在
-            return ResponseEntity.status(409).body(Map.of("error", e.getMessage()));
+            return ResponseEntity.status(409).body(Map.of("error", "username_exists"));
         } catch (Exception e) {
-            // 兜底异常，避免前端拿不到提示
-            return ResponseEntity.internalServerError().body(Map.of("error", "服务器内部错误"));
+            return ResponseEntity.internalServerError().body(Map.of("error", "server_error"));
         }
     }
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> body) {
         String username = body.get("username");
         String password = body.get("password");
-        if (username == null || username.isBlank() || password == null || password.isBlank()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "用户名和密码不能为空"));
+        if (username == null || username.trim().isEmpty() || password == null || password.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "invalid_input"));
         }
         var opt = userService.login(username, password);
-        if (opt.isEmpty()) {
-            return ResponseEntity.status(401).body(Map.of("error", "用户名或密码错误"));
-        }
+        if (opt.isEmpty()) return ResponseEntity.status(401).build();
         String token = jwtUtil.generate(opt.get().getUsername());
-        return ResponseEntity.ok(Map.of("token", token, "username", opt.get().getUsername()));
+        return ResponseEntity.ok(Map.of("token", token));
     }
 }
