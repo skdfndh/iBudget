@@ -94,6 +94,7 @@ public class TransactionService {
      * 获取所有交易
      */
     public List<Transaction> getAllTransactions() {
+        loadTransactions();
         return new ArrayList<>(transactions);
     }
     
@@ -101,6 +102,7 @@ public class TransactionService {
      * 根据用户ID获取交易
      */
     public List<Transaction> getTransactionsByUserId(String userId) {
+        loadTransactions();
         return transactions.stream()
             .filter(t -> userId.equals(t.getUserId()))
             .collect(Collectors.toList());
@@ -113,6 +115,7 @@ public class TransactionService {
         if (rule == null) {
             return getAllTransactions();
         }
+        loadTransactions();
         return transactions.stream()
             .filter(rule::test)
             .collect(Collectors.toList());
