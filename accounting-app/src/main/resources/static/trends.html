@@ -1,155 +1,164 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>趋势 · iBudget</title>
-<style>
-:root{--bg:#f7f8f9;--card:#ffffff;--text:#0f172a;--muted:#64748b;--line:#e5e7eb;--accent:#0a84ff}
-[data-theme="dark"]{--bg:#0b0e11;--card:#12151a;--text:#e5e7eb;--muted:#94a3b8;--line:#2a2f37;--accent:#0a84ff}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,system-ui}
-.container{max-width:1080px;margin:0 auto;padding:24px}
-.header{display:flex;justify-content:space-between;align-items:center;padding:12px 0}
-.nav a{color:var(--muted);text-decoration:none;margin-left:12px}
-.surface{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:0 1px 2px rgba(15,23,42,.04)}
-.section-title{display:flex;align-items:center;gap:8px;margin:0 0 12px 0;font-size:16px;font-weight:600}
-.grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-.metric{display:flex;justify-content:space-between;margin:6px 0;color:var(--muted)}
-.chart{height:220px;border:1px dashed var(--line);border-radius:12px;position:relative}
-.line{position:absolute;left:0;top:0;width:100%;height:100%}
-.ai-card{margin-bottom:16px}
-.ai-analysis{background:var(--card);padding:16px;border-radius:12px;border:1px solid var(--line);line-height:1.8;white-space:pre-wrap;font-size:14px}
-.loading{color:var(--muted);font-style:italic}
-.btn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:#fff;color:var(--text);padding:10px 14px;border-radius:12px;cursor:pointer;font-size:14px}
-.btn-primary{background:var(--accent);border-color:var(--accent);color:#fff}
-.btn:disabled{opacity:0.6;cursor:not-allowed}
-@media (max-width:768px){.grid-2{grid-template-columns:1fr}}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>趋势 · iBudget</title>
+    <style>
+        :root{--bg:#f7f8f9;--card:#ffffff;--text:#0f172a;--muted:#64748b;--line:#e5e7eb;--accent:#0a84ff}
+        /* 同步高对比度深蓝配色 */
+        [data-theme="dark"]{
+            --bg:#0f172a;
+            --card:#1e293b;
+            --text:#f8fafc;
+            --muted:#94a3b8;
+            --line:#334155;
+            --accent:#38bdf8
+        }
+        *{box-sizing:border-box}
+        body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,system-ui}
+        .container{max-width:1080px;margin:0 auto;padding:24px}
+        .header{display:flex;justify-content:space-between;align-items:center;padding:12px 0}
+        .nav a{color:var(--muted);text-decoration:none;margin-left:12px}
+        /* 核心框体与文字修正 */
+        .surface{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:0 1px 2px rgba(15,23,42,.04);color:var(--text)}
+        .section-title{display:flex;align-items:center;gap:8px;margin:0 0 12px 0;font-size:16px;font-weight:800;color:var(--text)}
+        .grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+        .metric{display:flex;justify-content:space-between;margin:6px 0;color:var(--muted)}
+        .metric strong{color:var(--text)} /* 强化数值颜色 */
+        .chart{height:220px;border:1px dashed var(--line);border-radius:12px;position:relative}
+        .line{position:absolute;left:0;top:0;width:100%;height:100%}
+        .ai-card{margin-bottom:16px}
+        /* AI 分析框适配 */
+        .ai-analysis{background:var(--bg);padding:16px;border-radius:12px;border:1px solid var(--line);line-height:1.8;white-space:pre-wrap;font-size:14px;color:var(--text)}
+        .loading{color:var(--muted);font-style:italic}
+        /* 按钮适配：修改.btn-primary文字色为--text，与标题保持一致 */
+        .btn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:#fff;color:var(--text);padding:10px 14px;border-radius:12px;cursor:pointer;font-size:14px;font-weight:600}
+        [data-theme="dark"] .btn{background:var(--card)}
+        .btn-primary{background:var(--accent);border-color:var(--accent);color:var(--text)} /* 改为--text变量，与AI标题颜色一致 */
+        .btn:disabled{opacity:0.6;cursor:not-allowed}
+        @media (max-width:768px){.grid-2{grid-template-columns:1fr}}
+    </style>
 </head>
 <body>
 <div class="container">
-  <div class="header">
-    <div>iBudget</div>
-    <div class="nav">
-      <a href="/transactions.html">账目</a>
-      <a href="/budgets.html">预算</a>
-      <a href="/trends.html">趋势</a>
-      <a href="/charts.html">图表</a>
-      <a href="/login.html">切换账号</a>
-      <a href="#" id="themeToggle">暗色</a>
+    <div class="header">
+        <div style="font-weight:800;font-size:1.2rem">iBudget</div>
+        <div class="nav">
+            <a href="/transactions.html">账目</a>
+            <a href="/budgets.html">预算</a>
+            <a href="/trends.html">趋势</a>
+            <a href="/charts.html">图表</a>
+            <a href="/login.html">切换账号</a>
+            <a href="#" id="themeToggle" style="color:var(--accent);font-weight:800">切换主题</a>
+        </div>
     </div>
-  </div>
 
-  <div class="surface ai-card">
-    <div class="section-title">AI智能消费分析</div>
-    <div style="margin-bottom:12px;color:var(--muted);font-size:13px">
-      基于AI大模型分析你的消费趋势，提供个性化节省建议和超支提醒
+    <div class="surface ai-card">
+        <div class="section-title">AI智能消费分析</div>
+        <div style="margin-bottom:12px;color:var(--muted);font-size:13px">
+            基于AI大模型分析你的消费趋势，提供个性化节省建议和超支提醒
+        </div>
+        <div>
+            <button class="btn btn-primary" id="btnAIAnalyze">🔍 开始AI分析</button>
+        </div>
+        <div id="aiResult" style="margin-top:16px;display:none">
+            <div class="ai-analysis" id="aiContent"></div>
+        </div>
     </div>
-    <div>
-      <button class="btn btn-primary" id="btnAIAnalyze">开始AI分析</button>
-    </div>
-    <div id="aiResult" style="margin-top:16px;display:none">
-      <div class="ai-analysis" id="aiContent"></div>
-    </div>
-  </div>
 
-  <div class="surface" style="margin-bottom:16px">
-    <div class="section-title">消费趋势分析</div>
-    <div class="grid-2">
-      <div>
-        <div class="metric"><span>平均月支出</span><strong id="avgExp">-</strong></div>
-        <div class="metric"><span>趋势（相对首月）</span><strong id="trend">-</strong></div>
-        <div class="metric"><span>预测下月支出</span><strong id="predict">-</strong></div>
-        <div class="metric"><span>本月净额</span><strong id="net">-</strong></div>
-      </div>
-      <div>
-        <label style="color:var(--muted)">最近月份支出（折线）</label>
-        <div id="lineChart" class="chart"></div>
-      </div>
+    <div class="surface" style="margin-bottom:16px">
+        <div class="section-title">消费趋势分析</div>
+        <div class="grid-2">
+            <div>
+                <div class="metric"><span>平均月支出</span><strong id="avgExp">-</strong></div>
+                <div class="metric"><span>趋势（相对首月）</span><strong id="trend">-</strong></div>
+                <div class="metric"><span>预测下月支出</span><strong id="predict">-</strong></div>
+                <div class="metric"><span>本月净额</span><strong id="net">-</strong></div>
+            </div>
+            <div>
+                <label style="color:var(--muted);font-size:12px;font-weight:600">最近月份支出（折线）</label>
+                <div id="lineChart" class="chart" style="margin-top:8px"></div>
+            </div>
+        </div>
     </div>
-  </div>
 </div>
 
 <script>
-const savedTheme=localStorage.getItem('theme')||'light'
-document.documentElement.dataset.theme=savedTheme
-document.getElementById('themeToggle').onclick=(e)=>{e.preventDefault();const t=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=t;localStorage.setItem('theme',t)}
-const base='/api'
-const token=localStorage.getItem('jwt'); if(!token){location.href='/login.html'}
-async function fetchJSON(url,opts){
-  const r=await fetch(url,{...opts,headers:{...(opts&&opts.headers||{}),'Content-Type':'application/json','Authorization':'Bearer '+token}})
-  if(!r.ok) throw new Error('http '+r.status)
-  return r.status===204?null:await r.json()
-}
-
-async function load(){
-  const months=12
-  const m=await fetchJSON(base+'/stats/monthly?months='+months)
-  const tr=await fetchJSON(base+'/stats/trend?months='+months)
-  const pr=await fetchJSON(base+'/stats/predict?months='+months)
-  const d=new Date(); const ms=await fetchJSON(base+`/stats/month?year=${d.getFullYear()}&month=${d.getMonth()+1}`)
-  document.getElementById('avgExp').textContent=(tr.avgExpense||0).toFixed(2)
-  document.getElementById('trend').textContent=((Math.round((tr.trendPercent||0)*10)/10)+'%')
-  document.getElementById('predict').textContent=((pr.nextExpense||0).toFixed(2))
-  document.getElementById('net').textContent=((ms.netAmount||0).toFixed(2))
-  renderLine(m.expenses)
-}
-
-function renderLine(values){
-  const cont=document.getElementById('lineChart'); cont.innerHTML=''
-  const w=cont.clientWidth||600, h=220; const svg=document.createElementNS('http://www.w3.org/2000/svg','svg'); svg.setAttribute('width',w); svg.setAttribute('height',h)
-  const max=Math.max(...values,1); const step=w/(values.length-1)
-  let d=''; values.forEach((v,i)=>{const x=Math.round(i*step); const y=Math.round(h-10-(h-20)*(v/max)); d+= (i===0?`M${x},${y}`:` L${x},${y}`)})
-  const path=document.createElementNS('http://www.w3.org/2000/svg','path'); path.setAttribute('d',d); path.setAttribute('stroke','#0a84ff'); path.setAttribute('fill','none'); path.setAttribute('stroke-width','2')
-  svg.appendChild(path); cont.appendChild(svg)
-}
-
-load()
-
-// AI分析功能
-document.getElementById('btnAIAnalyze').onclick=async()=>{
-  const btn=document.getElementById('btnAIAnalyze')
-  const result=document.getElementById('aiResult')
-  const content=document.getElementById('aiContent')
-  
-  btn.disabled=true
-  btn.textContent='分析中...'
-  result.style.display='block'
-  content.textContent='正在调用AI大模型进行深度分析，请稍候...'
-  content.className='ai-analysis loading'
-  
-  try{
-    const userId=JSON.parse(atob(token.split('.')[1])).sub
-    const d=new Date()
-    const resp=await fetchJSON(base+'/ai/analyze?userId='+encodeURIComponent(userId)+'&year='+d.getFullYear()+'&month='+(d.getMonth()+1),{method:'POST'})
-    
-    if(resp.status==='success'){
-      content.textContent=resp.analysis
-      content.className='ai-analysis'
-    }else{
-      content.textContent='❌ AI分析失败: '+(resp.error||'未知错误')
-      content.className='ai-analysis'
+    /* 保持原有逻辑代码不变 */
+    const savedTheme=localStorage.getItem('theme')||'light'
+    document.documentElement.dataset.theme=savedTheme
+    document.getElementById('themeToggle').onclick=(e)=>{e.preventDefault();const t=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=t;localStorage.setItem('theme',t)}
+    const base='/api'
+    const token=localStorage.getItem('jwt'); if(!token){location.href='/login.html'}
+    async function fetchJSON(url,opts){
+        const r=await fetch(url,{...opts,headers:{...(opts&&opts.headers||{}),'Content-Type':'application/json','Authorization':'Bearer '+token}})
+        if(!r.ok) throw new Error('http '+r.status)
+        return r.status===204?null:await r.json()
     }
-  }catch(e){
-    content.textContent='❌ 调用AI服务失败: '+e.message
-    content.className='ai-analysis'
-  }finally{
-    btn.disabled=false
-    btn.textContent='🔍 开始AI分析'
-  }
-}
 
-function setupAutoReload(){
-  let last = Number(localStorage.getItem('ledgerLastUpdate')||'0')
-  function check(){
-    const t = Number(localStorage.getItem('ledgerLastUpdate')||'0')
-    if(t>last){ last=t; load() }
-  }
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden) check()})
-  setInterval(check,5000)
-}
-setupAutoReload()
+    async function load(){
+        const months=12
+        try {
+            const m=await fetchJSON(base+'/stats/monthly?months='+months)
+            const tr=await fetchJSON(base+'/stats/trend?months='+months)
+            const pr=await fetchJSON(base+'/stats/predict?months='+months)
+            const d=new Date(); const ms=await fetchJSON(base+`/stats/month?year=${d.getFullYear()}&month=${d.getMonth()+1}`)
+            document.getElementById('avgExp').textContent='¥'+(tr.avgExpense||0).toFixed(2)
+            document.getElementById('trend').textContent=((Math.round((tr.trendPercent||0)*10)/10)+'%')
+            document.getElementById('predict').textContent='¥'+((pr.nextExpense||0).toFixed(2))
+            document.getElementById('net').textContent='¥'+((ms.netAmount||0).toFixed(2))
+            renderLine(m.expenses)
+        } catch(e) { console.error('加载失败', e) }
+    }
+
+    function renderLine(values){
+        const cont=document.getElementById('lineChart'); cont.innerHTML=''
+        const w=cont.clientWidth||600, h=220; const svg=document.createElementNS('http://www.w3.org/2000/svg','svg'); svg.setAttribute('width',w); svg.setAttribute('height',h)
+        if(!values || values.length < 2) return;
+        const max=Math.max(...values,1); const step=w/(values.length-1)
+        let d=''; values.forEach((v,i)=>{const x=Math.round(i*step); const y=Math.round(h-10-(h-20)*(v/max)); d+= (i===0?`M${x},${y}`:` L${x},${y}`)})
+        const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+        path.setAttribute('d',d);
+        // 同步线条颜色为 accent 变量
+        path.setAttribute('stroke',getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#0a84ff');
+        path.setAttribute('fill','none'); path.setAttribute('stroke-width','3')
+        svg.appendChild(path); cont.appendChild(svg)
+    }
+
+    load()
+
+    document.getElementById('btnAIAnalyze').onclick=async()=>{
+        const btn=document.getElementById('btnAIAnalyze')
+        const result=document.getElementById('aiResult')
+        const content=document.getElementById('aiContent')
+        btn.disabled=true; btn.textContent='分析中...'; result.style.display='block'
+        content.textContent='正在调用AI大模型进行深度分析，请稍候...'; content.className='ai-analysis loading'
+        try{
+            const userId=JSON.parse(atob(token.split('.')[1])).sub; const d=new Date()
+            const resp=await fetchJSON(base+'/ai/analyze?userId='+encodeURIComponent(userId)+'&year='+d.getFullYear()+'&month='+(d.getMonth()+1),{method:'POST'})
+            if(resp.status==='success'){
+                content.textContent=resp.analysis; content.className='ai-analysis'
+            }else{
+                content.textContent='❌ AI分析失败: '+(resp.error||'未知错误'); content.className='ai-analysis'
+            }
+        }catch(e){
+            content.textContent='❌ 调用AI服务失败: '+e.message; content.className='ai-analysis'
+        }finally{
+            btn.disabled=false; btn.textContent='🔍 开始AI分析'
+        }
+    }
+
+    function setupAutoReload(){
+        let last = Number(localStorage.getItem('ledgerLastUpdate')||'0')
+        function check(){
+            const t = Number(localStorage.getItem('ledgerLastUpdate')||'0')
+            if(t>last){ last=t; load() }
+        }
+        document.addEventListener('visibilitychange',()=>{if(!document.hidden) check()})
+        setInterval(check,5000)
+    }
+    setupAutoReload()
 </script>
 </body>
 </html>

@@ -55,7 +55,7 @@
 
     <div class="surface" style="margin-bottom:16px">
         <div class="section-title">预算设置</div>
-        
+
         <!-- 预算类型切换 -->
         <div style="margin-bottom:16px">
             <div class="toggle-group">
@@ -113,22 +113,22 @@
     const savedTheme=localStorage.getItem('theme')||'light'
     document.documentElement.dataset.theme=savedTheme
     document.getElementById('themeToggle').onclick=(e)=>{e.preventDefault();const t=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=t;localStorage.setItem('theme',t)}
-    const base='/api'; const token=localStorage.getItem('jwt'); 
+    const base='/api'; const token=localStorage.getItem('jwt');
     if(!token){console.error('未登录,跳转登录页');location.href='/login.html'}
-    
+
     // 月度预算元素
     const bdYear=document.getElementById('bdYear')
     const bdMonth=document.getElementById('bdMonth')
     const bdCategory=document.getElementById('bdCategory')
     const bdAmount=document.getElementById('bdAmount')
-    
+
     // 周期型预算元素
     const pdStartDate=document.getElementById('pdStartDate')
     const pdCategory=document.getElementById('pdCategory')
     const pdUnit=document.getElementById('pdUnit')
     const pdCount=document.getElementById('pdCount')
     const pdAmount=document.getElementById('pdAmount')
-    
+
     const bdTbody=document.getElementById('bdTbody')
     const monthlyForm=document.getElementById('monthlyForm')
     const periodForm=document.getElementById('periodForm')
@@ -139,7 +139,7 @@
             // 更新按钮状态
             document.querySelectorAll('.toggle-btn').forEach(b=>b.classList.remove('active'))
             btn.classList.add('active')
-            
+
             // 切换表单显示
             const type=btn.getAttribute('data-type')
             if(type==='monthly'){
@@ -161,13 +161,13 @@
             location.href='/login.html'
             throw new Error('身份验证失败,请重新登录')
         }
-        if(!r.ok) throw new Error('http '+r.status); 
+        if(!r.ok) throw new Error('http '+r.status);
         return r.status===204?null:await r.json()
     }
 
     function nowYM(){const d=new Date(); return {year:d.getFullYear(),month:d.getMonth()+1}}
     const nym=nowYM(); bdYear.value=nym.year; bdMonth.value=nym.month
-    
+
     // 设置周期型预算默认日期为今天
     const today=new Date().toISOString().split('T')[0]
     pdStartDate.value=today
@@ -183,17 +183,17 @@
             alert('❌ 创建失败: '+e.message)
         }
     }
-    
+
     // 周期型预算创建
     document.getElementById('btnSetPeriodBudget').onclick=async()=>{
         try{
             const userId=JSON.parse(atob(token.split('.')[1])).sub
             const startDate=pdStartDate.value
             if(!startDate){alert('请选择开始日期');return}
-            
+
             const amount = parseFloat(pdAmount.value||'0')
             if(amount <= 0){alert('请输入有效的预算金额');return}
-            
+
             const payload={
                 userId,
                 categoryId:pdCategory.value||null,
@@ -222,7 +222,7 @@
         const q=new URLSearchParams({year:userBudget.year,month:userBudget.month}); if(userBudget.categoryId) q.set('categoryId',userBudget.categoryId)
         return await fetchJSON(base+'/budgets/usage?'+q.toString())
     }
-    
+
     // 获取预算统计数据
     async function getStats(budgetId){
         try{
@@ -232,7 +232,7 @@
             return null
         }
     }
-    
+
     // 格式化周期显示
     function formatPeriod(b){
         if(b.startDate && b.periodUnit){
@@ -250,10 +250,10 @@
                 bdTbody.innerHTML='<tr><td colspan="10" style="text-align:center;color:var(--muted)">暂无预算数据,请先创建预算</td></tr>'
                 return
             }
-            
+
             const rows = await Promise.all(arr.map(async b=>{
                 let ratePct=0, statusHtml='', spent=0, remaining=0, avgBudget='', avgActual=''
-                
+
                 if(b.startDate && b.periodUnit){
                     // 周期型预算 - 使用统计分析
                     const stats=await getStats(b.id)
@@ -263,7 +263,7 @@
                         ratePct=Math.round((stats.amountSpent/b.amount)*100)
                         avgBudget = `¥${stats.avgPerDayBudget.toFixed(2)}`
                         avgActual = `¥${stats.avgPerDayActual.toFixed(2)}`
-                        
+
                         if(stats.willBeOverspentByAvg){
                             statusHtml=`<span class='alert'>⚠️ 预测超支 ¥${Math.abs(stats.projectedRemainingByAvgSoFar).toFixed(2)}</span>`
                         }else if(stats.remaining<0){
@@ -281,11 +281,11 @@
                         spent = u.rate * b.amount
                         remaining = b.amount - spent
                         ratePct=Math.round((u.rate||0)*100)
-                        
+
                         // 计算月度预算的日均值(假设30天)
                         avgBudget = `¥${(b.amount/30).toFixed(2)}`
                         avgActual = `¥${(spent/30).toFixed(2)}`
-                        
+
                         if(u.over){
                             statusHtml=`<span class='alert'>已超额 ¥${u.overAmount.toFixed(2)}</span>`
                         }else if(ratePct>=80){
@@ -297,7 +297,7 @@
                         console.error('获取预算使用率失败:', e)
                     }
                 }
-                
+
                 return `<tr>
         <td>${b.categoryId||'总预算'}</td>
         <td style='text-align:right;font-weight:bold'>¥${(b.amount||0).toFixed(2)}</td>
@@ -331,7 +331,7 @@
             showBudgetDetail(id)
         }
     }
-    
+
     // 显示预算详细统计
     async function showBudgetDetail(budgetId){
         const stats=await getStats(budgetId)
@@ -339,7 +339,7 @@
             alert('该预算暂无详细统计数据')
             return
         }
-        
+
         const s=stats
         let msg=`📊 预算统计分析\n\n`
         msg+=`📅 周期: ${s.budget.startDate} 至 ${s.budget.endDate}\n`
@@ -349,24 +349,24 @@
         msg+=`📈 日均预算: ¥${s.avgPerDayBudget.toFixed(2)}/天\n`
         msg+=`📉 实际日均: ¥${s.avgPerDayActual.toFixed(2)}/天\n`
         msg+=`⏱️ 已经过 ${s.daysElapsed}/${s.totalDays} 天\n\n`
-        
+
         if(s.willBeOverspentByAvg){
             msg+=`⚠️ 超支预警: 按当前速率，预计总消费 ¥${s.projectedTotalByAvgSoFar.toFixed(2)}\n`
             msg+=`   预计超支 ¥${Math.abs(s.projectedRemainingByAvgSoFar).toFixed(2)}\n\n`
         }else{
             msg+=`✅ 预算健康: 按当前速率，预计剩余 ¥${s.projectedRemainingByAvgSoFar.toFixed(2)}\n\n`
         }
-        
+
         if(s.last7DaysSpent>0){
             msg+=`📆 近7天消费: ¥${s.last7DaysSpent.toFixed(2)}\n`
         }
         if(s.last30DaysSpent>0){
             msg+=`📆 近30天消费: ¥${s.last30DaysSpent.toFixed(2)}\n`
         }
-        
+
         alert(msg)
     }
-    
+
     loadBudgets()
 </script>
 </body>
