@@ -100,7 +100,7 @@
     <div class="surface" style="margin-bottom:16px">
         <div class="section-title">预算列表与智能分析</div>
         <table class="table">
-            <thead><tr><th>分类</th><th>金额</th><th>周期</th><th>使用率</th><th>状态</th><th>操作</th></tr></thead>
+            <thead><tr><th>分类</th><th>预算金额</th><th>周期</th><th>已消费</th><th>剩余</th><th>日均预算</th><th>日均实际</th><th>使用率</th><th>状态</th><th>操作</th></tr></thead>
             <tbody id="bdTbody"></tbody>
         </table>
     </div>
@@ -156,29 +156,48 @@
 
     // 月度预算设置
     document.getElementById('btnSetBudget').onclick=async()=>{
-        const payload={year:parseInt(bdYear.value),month:parseInt(bdMonth.value),categoryId:(bdCategory.value||null),amount:parseFloat(bdAmount.value||'0')}
-        await fetchJSON(base+'/budgets',{method:'POST',body:JSON.stringify(payload)})
-        loadBudgets()
+        try{
+            const payload={year:parseInt(bdYear.value),month:parseInt(bdMonth.value),categoryId:(bdCategory.value||null),amount:parseFloat(bdAmount.value||'0')}
+            await fetchJSON(base+'/budgets',{method:'POST',body:JSON.stringify(payload)})
+            alert('✅ 月度预算设置成功')
+            loadBudgets()
+        }catch(e){
+            alert('❌ 创建失败: '+e.message)
+        }
     }
     
     // 周期型预算创建
     document.getElementById('btnSetPeriodBudget').onclick=async()=>{
-        const userId=JSON.parse(atob(token.split('.')[1])).sub
-        const startDate=pdStartDate.value
-        if(!startDate){alert('请选择开始日期');return}
-        
-        const payload={
-            userId,
-            categoryId:pdCategory.value||null,
-            amount:parseFloat(pdAmount.value||'0'),
-            startDate,
-            periodUnit:pdUnit.value,
-            periodCount:parseInt(pdCount.value||'1'),
-            year:parseInt(startDate.split('-')[0]),
-            month:parseInt(startDate.split('-')[1])
+        try{
+            const userId=JSON.parse(atob(token.split('.')[1])).sub
+            const startDate=pdStartDate.value
+            if(!startDate){alert('请选择开始日期');return}
+            
+            const amount = parseFloat(pdAmount.value||'0')
+            if(amount <= 0){alert('请输入有效的预算金额');return}
+            
+            const payload={
+                userId,
+                categoryId:pdCategory.value||null,
+                amount,
+                startDate,
+                periodUnit:pdUnit.value,
+                periodCount:parseInt(pdCount.value||'1'),
+                year:parseInt(startDate.split('-')[0]),
+                month:parseInt(startDate.split('-')[1])
+            }
+            console.log('创建周期型预算:', payload)
+            const result = await fetchJSON(base+'/budgets',{method:'POST',body:JSON.stringify(payload)})
+            console.log('创建成功:', result)
+            alert('✅ 周期型预算创建成功')
+            // 清空表单
+            pdAmount.value=''
+            pdCategory.value=''
+            loadBudgets()
+        }catch(e){
+            console.error('创建失败:', e)
+            alert('❌ 创建失败: '+e.message)
         }
-        await fetchJSON(base+'/budgets',{method:'POST',body:JSON.stringify(payload)})
-        loadBudgets()
     }
 
     async function usageInfo(userBudget){
@@ -210,23 +229,27 @@
         try{
             const arr=await fetchJSON(base+'/budgets')
             if(!arr || arr.length===0){
-                bdTbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted)">暂无预算数据,请先创建预算</td></tr>'
+                bdTbody.innerHTML='<tr><td colspan="10" style="text-align:center;color:var(--muted)">暂无预算数据,请先创建预算</td></tr>'
                 return
             }
             
             const rows = await Promise.all(arr.map(async b=>{
-                let ratePct=0, statusHtml=''
+                let ratePct=0, statusHtml='', spent=0, remaining=0, avgBudget='', avgActual=''
                 
                 if(b.startDate && b.periodUnit){
                     // 周期型预算 - 使用统计分析
                     const stats=await getStats(b.id)
                     if(stats){
+                        spent = stats.amountSpent
+                        remaining = stats.remaining
                         ratePct=Math.round((stats.amountSpent/b.amount)*100)
+                        avgBudget = `¥${stats.avgPerDayBudget.toFixed(2)}`
+                        avgActual = `¥${stats.avgPerDayActual.toFixed(2)}`
                         
                         if(stats.willBeOverspentByAvg){
                             statusHtml=`<span class='alert'>⚠️ 预测超支 ¥${Math.abs(stats.projectedRemainingByAvgSoFar).toFixed(2)}</span>`
                         }else if(stats.remaining<0){
-                            statusHtml=`<span class='alert'>超额 ¥${Math.abs(stats.remaining).toFixed(2)}</span>`
+                            statusHtml=`<span class='alert'>已超额 ¥${Math.abs(stats.remaining).toFixed(2)}</span>`
                         }else if(ratePct>=80){
                             statusHtml=`<span style='color:var(--warn)'>预警 ${ratePct}%</span>`
                         }else{
@@ -237,9 +260,16 @@
                     // 月度预算 - 使用原有逻辑
                     try{
                         const u=await usageInfo(b)
+                        spent = u.rate * b.amount
+                        remaining = b.amount - spent
                         ratePct=Math.round((u.rate||0)*100)
+                        
+                        // 计算月度预算的日均值(假设30天)
+                        avgBudget = `¥${(b.amount/30).toFixed(2)}`
+                        avgActual = `¥${(spent/30).toFixed(2)}`
+                        
                         if(u.over){
-                            statusHtml=`<span class='alert'>超额 ¥${u.overAmount.toFixed(2)}</span>`
+                            statusHtml=`<span class='alert'>已超额 ¥${u.overAmount.toFixed(2)}</span>`
                         }else if(ratePct>=80){
                             statusHtml=`<span style='color:var(--warn)'>预警 ${ratePct}%</span>`
                         }else{
@@ -254,6 +284,10 @@
         <td>${b.categoryId||'总预算'}</td>
         <td style='text-align:right;font-weight:bold'>¥${(b.amount||0).toFixed(2)}</td>
         <td>${formatPeriod(b)}</td>
+        <td style='text-align:right;font-weight:600;color:var(--accent)'>¥${spent.toFixed(2)}</td>
+        <td style='text-align:right;font-weight:600;color:${remaining>=0?'var(--text)':'var(--warn)'}'>¥${remaining.toFixed(2)}</td>
+        <td style='text-align:right;font-size:13px'>${avgBudget}</td>
+        <td style='text-align:right;font-size:13px;font-weight:600'>${avgActual}</td>
         <td><div class='usage'><div class='bar-bg'><div class='bar' style='width:${Math.min(ratePct,100)}%'></div></div><span style='font-size:12px;min-width:35px'>${ratePct}%</span></div></td>
         <td>${statusHtml}</td>
         <td>
@@ -265,7 +299,7 @@
             bdTbody.innerHTML=rows.join('')
         }catch(e){
             console.error('加载预算失败:', e)
-            bdTbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--warn)">加载失败: '+e.message+'</td></tr>'
+            bdTbody.innerHTML='<tr><td colspan="10" style="text-align:center;color:var(--warn)">加载失败: '+e.message+'</td></tr>'
         }
     }
 
