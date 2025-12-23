@@ -50,6 +50,7 @@ public class MainApplication extends Application {
         LocalTransactionService ts = new LocalTransactionService(storage);
         LocalBudgetService bs = new LocalBudgetService(storage, ts);
         LocalStatisticService ss = new LocalStatisticService(ts);
+        LocalAIAnalysisService aiService = new LocalAIAnalysisService();
         ChartAnalyzer analyzer = new ChartAnalyzer(ss);
         ApiClient api = new ApiClient("http://localhost:8080");
         VBox authBox = new VBox();
@@ -211,6 +212,96 @@ public class MainApplication extends Application {
         });
         HBox budgetForm = new HBox(yearField, monthField, budgetCatField, budgetAmountField, btnSetBudget);
         budgetForm.setSpacing(10);
+        budgetBox.getChildren().addAll(new Label("预算设置"), budgetForm, budgetInfo);
+        
+        // 趋势页面
+        VBox trendsBox = new VBox();
+        trendsBox.setSpacing(10);
+        trendsBox.setStyle("-fx-padding: 16px;");
+        
+        // AI分析区域
+        VBox aiBox = new VBox();
+        aiBox.setSpacing(10);
+        aiBox.setStyle("-fx-padding: 16px; -fx-background-color: -fx-background; -fx-border-color: -fx-border; -fx-border-radius: 8px; -fx-background-radius: 8px;");
+        Label aiTitle = new Label("🤖 AI智能消费分析");
+        aiTitle.setStyle("-fx-font-size: 15px; -fx-font-weight: bold;");
+        Label aiDesc = new Label("基于AI大模型分析你的消费趋势，提供个性化节省建议和超支提醒");
+        aiDesc.setStyle("-fx-font-size: 12px; -fx-text-fill: gray;");
+        Button btnAIAnalyze = new Button("🔍 开始AI分析");
+        btnAIAnalyze.getStyleClass().add("button");
+        btnAIAnalyze.getStyleClass().add("primary");
+        TextArea aiResult = new TextArea();
+        aiResult.setWrapText(true);
+        aiResult.setEditable(false);
+        aiResult.setPrefRowCount(8);
+        aiResult.setVisible(false);
+        aiResult.setStyle("-fx-font-size: 13px;");
+        
+        btnAIAnalyze.setOnAction(e -> {
+            btnAIAnalyze.setDisable(true);
+            btnAIAnalyze.setText("🔄 分析中...");
+            aiResult.setVisible(true);
+            aiResult.setText("正在调用AI大模型进行深度分析，请稍候...");
+            
+            new Thread(() -> {
+                try {
+                    String userId = username.getText().isEmpty() ? "demo" : username.getText();
+                    int year = java.time.LocalDate.now().getYear();
+                    int month = java.time.LocalDate.now().getMonthValue();
+                    
+                    // 收集数据
+                    java.util.Map<String, Object> budgetData = new java.util.HashMap<>();
+                    
+                    // 获取预算和使用情况
+                    double used = bs.calculateUsedAmount(userId, null, year, month);
+                    boolean isOver = bs.isOverBudget(userId, null, year, month);
+                    budgetData.put("usedAmount", used);
+                    budgetData.put("isOverBudget", isOver);
+                    
+                    java.util.Map<String, Object> stats = ss.getMonthlyStatistics(userId, year, month);
+                    budgetData.putAll(stats);
+                    
+                    java.util.Map<String, Double> categoryExpenses = ss.getExpensesByCategory(userId, YearMonth.now());
+                    if (categoryExpenses != null && !categoryExpenses.isEmpty()) {
+                        budgetData.put("categoryExpenses", categoryExpenses);
+                    }
+                    
+                    java.util.Map<YearMonth, Double> monthlyExpenses = ss.getMonthlyExpenses(userId, 6);
+                    if (monthlyExpenses != null && !monthlyExpenses.isEmpty()) {
+                        budgetData.put("monthlyTrend", monthlyExpenses.values().toString());
+                    }
+                    
+                    String analysis = aiService.analyzeSpending(budgetData);
+                    
+                    javafx.application.Platform.runLater(() -> {
+                        aiResult.setText(analysis);
+                        btnAIAnalyze.setDisable(false);
+                        btnAIAnalyze.setText("🔍 开始AI分析");
+                    });
+                } catch (Exception ex) {
+                    javafx.application.Platform.runLater(() -> {
+                        aiResult.setText("❌ AI分析失败: " + ex.getMessage());
+                        btnAIAnalyze.setDisable(false);
+                        btnAIAnalyze.setText("🔍 开始AI分析");
+                    });
+                }
+            }).start();
+        });
+        
+        aiBox.getChildren().addAll(aiTitle, aiDesc, btnAIAnalyze, aiResult);
+        
+        // 趋势数据展示
+        VBox trendsDataBox = new VBox();
+        trendsDataBox.setSpacing(10);
+        trendsDataBox.setStyle("-fx-padding: 16px; -fx-background-color: -fx-background; -fx-border-color: -fx-border; -fx-border-radius: 8px; -fx-background-radius: 8px;");
+        Label trendsTitle = new Label("📊 消费趋势分析");
+        trendsTitle.setStyle("-fx-font-size: 15px; -fx-font-weight: bold;");
+        Label avgExpenseLabel = new Label("平均月支出: 计算中...");
+        Label trendLabel = new Label("趋势: 计算中...");
+        Label predictLabel = new Label("预测下月支出: 计算中...");
+        trendsDataBox.getChildren().addAll(trendsTitle, avgExpenseLabel, trendLabel, predictLabel);
+        
+        trendsBox.getChildren().addAll(aiBox, trendsDataBox);
         budgetBox.getChildren().addAll(new Label("预算设置"), budgetForm, budgetInfo);
         // 图表页面
         Map<String, Double> catExpenseData = analyzer.categoryExpense(username.getText().isEmpty() ? "demo" : username.getText(), YearMonth.now());
@@ -384,12 +475,14 @@ public class MainApplication extends Application {
         Tab authTab = new Tab("账号", authBox);
         Tab transactionsTab = new Tab("交易", txBox);
         Tab budgetTab = new Tab("预算", budgetBox);
+        Tab trendsTab = new Tab("趋势", trendsBox);
         Tab chartsTab = new Tab("图表", chartBox);
         authTab.setClosable(false);
         transactionsTab.setClosable(false);
         budgetTab.setClosable(false);
+        trendsTab.setClosable(false);
         chartsTab.setClosable(false);
-        tabPane.getTabs().addAll(authTab, transactionsTab, budgetTab, chartsTab);
+        tabPane.getTabs().addAll(authTab, transactionsTab, budgetTab, trendsTab, chartsTab);
         Scene scene = new Scene(tabPane, 1200, 800);
         String lightCss = MainApplication.class.getResource("/ui.css").toExternalForm();
         String darkCss = MainApplication.class.getResource("/ui-dark.css").toExternalForm();
