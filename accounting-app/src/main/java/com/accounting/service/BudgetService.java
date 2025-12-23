@@ -2,32 +2,29 @@ package com.accounting.service;
 
 import com.accounting.model.Budget;
 import com.accounting.model.Transaction;
-import com.accounting.storage.StorageManager;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
+import com.accounting.repository.BudgetRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.time.LocalDate;
 import java.time.YearMonth;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
  * 预算服务类
  * 提供预算的增删改查和超额提醒功能
  */
+@Service
+@Transactional
 public class BudgetService {
-    private static final String BUDGETS_FILE = "budgets.json";
-    private StorageManager storageManager;
-    private Gson gson;
-    private List<Budget> budgets;
-    private TransactionService transactionService;
+    private final BudgetRepository budgetRepository;
+    private final TransactionService transactionService;
     
-    public BudgetService(StorageManager storageManager, TransactionService transactionService) {
-        this.storageManager = storageManager;
+    public BudgetService(BudgetRepository budgetRepository, TransactionService transactionService) {
+        this.budgetRepository = budgetRepository;
         this.transactionService = transactionService;
-        this.gson = new Gson();
-        this.budgets = new ArrayList<>();
-        loadBudgets();
     }
     
     /**
@@ -35,90 +32,67 @@ public class BudgetService {
      */
     public Budget addBudget(Budget budget) {
         if (budget.getId() == null || budget.getId().isEmpty()) {
-            budget.setId(java.util.UUID.randomUUID().toString());
+            budget.setId(UUID.randomUUID().toString());
         }
-        budgets.add(budget);
-        saveBudgets();
-        return budget;
+        return budgetRepository.save(budget);
     }
     
     /**
      * 删除预算
      */
     public boolean deleteBudget(String budgetId) {
-        boolean removed = budgets.removeIf(b -> b.getId().equals(budgetId));
-        if (removed) {
-            saveBudgets();
+        if (budgetRepository.existsById(budgetId)) {
+            budgetRepository.deleteById(budgetId);
+            return true;
         }
-        return removed;
+        return false;
     }
     
     /**
      * 更新预算
      */
     public Budget updateBudget(String budgetId, Budget updatedBudget) {
-        for (int i = 0; i < budgets.size(); i++) {
-            if (budgets.get(i).getId().equals(budgetId)) {
-                updatedBudget.setId(budgetId);
-                budgets.set(i, updatedBudget);
-                saveBudgets();
-                return updatedBudget;
-            }
-        }
-        return null;
+        return budgetRepository.findById(budgetId).map(existing -> {
+            updatedBudget.setId(budgetId);
+            return budgetRepository.save(updatedBudget);
+        }).orElse(null);
     }
     
     /**
      * 根据ID查询预算
      */
     public Budget getBudgetById(String budgetId) {
-        return budgets.stream()
-            .filter(b -> b.getId().equals(budgetId))
-            .findFirst()
-            .orElse(null);
+        return budgetRepository.findById(budgetId).orElse(null);
     }
     
     /**
      * 获取指定月份的总预算
      */
     public Budget getTotalBudget(String userId, int year, int month) {
-        return budgets.stream()
-            .filter(b -> b.getUserId().equals(userId))
-            .filter(b -> b.getYear() == year && b.getMonth() == month)
-            .filter(Budget::isTotalBudget)
-            .findFirst()
-            .orElse(null);
+        return budgetRepository.findByUserIdAndCategoryIdIsNullAndYearAndMonth(userId, year, month)
+                .orElse(null);
     }
     
     /**
      * 获取指定月份的分类预算
      */
     public Budget getCategoryBudget(String userId, String categoryId, int year, int month) {
-        return budgets.stream()
-            .filter(b -> b.getUserId().equals(userId))
-            .filter(b -> b.getCategoryId() != null && b.getCategoryId().equals(categoryId))
-            .filter(b -> b.getYear() == year && b.getMonth() == month)
-            .findFirst()
-            .orElse(null);
+        return budgetRepository.findByUserIdAndCategoryIdAndYearAndMonth(userId, categoryId, year, month)
+                .orElse(null);
     }
     
     /**
      * 获取用户的所有预算
      */
     public List<Budget> getBudgetsByUserId(String userId) {
-        return budgets.stream()
-            .filter(b -> b.getUserId().equals(userId))
-            .collect(Collectors.toList());
+        return budgetRepository.findByUserId(userId);
     }
     
     /**
      * 获取指定月份的预算列表
      */
     public List<Budget> getBudgetsByMonth(String userId, int year, int month) {
-        return budgets.stream()
-            .filter(b -> b.getUserId().equals(userId))
-            .filter(b -> b.getYear() == year && b.getMonth() == month)
-            .collect(Collectors.toList());
+        return budgetRepository.findByUserIdAndYearAndMonth(userId, year, month);
     }
     
     /**
@@ -129,16 +103,14 @@ public class BudgetService {
         LocalDate startDate = yearMonth.atDay(1);
         LocalDate endDate = yearMonth.atEndOfMonth();
         
-        List<Transaction> transactions = transactionService.getTransactionsByUserId(userId);
+        // 先按月份范围获取交易，再基于用户、类型与分类在内存中过滤
+        // 如需更高性能，可在TransactionRepository中增加按用户与分类的范围查询方法
+        List<Transaction> transactions = transactionService.getTransactionsByDateRange(startDate.atStartOfDay(), endDate.atTime(23, 59, 59));
         
         return transactions.stream()
-            .filter(t -> {
-                if (t.getDate() == null) return false;
-                LocalDate transactionDate = t.getDate().toLocalDate();
-                return !transactionDate.isBefore(startDate) && !transactionDate.isAfter(endDate);
-            })
-            .filter(t -> t.getType() == Transaction.TransactionType.EXPENSE)
-            .filter(t -> categoryId == null || categoryId.equals(t.getCategoryId()))
+            .filter(t -> userId.equals(t.getUserId())) // 仅统计当前用户的交易
+            .filter(t -> t.getType() == Transaction.TransactionType.EXPENSE) // 仅统计支出
+            .filter(t -> categoryId == null || categoryId.equals(t.getCategoryId())) // 分类为空表示汇总
             .mapToDouble(Transaction::getAmount)
             .sum();
     }
@@ -202,41 +174,10 @@ public class BudgetService {
         
         if (existingBudget != null) {
             existingBudget.setAmount(amount);
-            saveBudgets();
-            return existingBudget;
+            return budgetRepository.save(existingBudget);
         } else {
             Budget newBudget = new Budget(userId, categoryId, amount, year, month);
             return addBudget(newBudget);
-        }
-    }
-    
-    /**
-     * 加载预算数据
-     */
-    private void loadBudgets() {
-        try {
-            String json = storageManager.readFile(BUDGETS_FILE);
-            if (json != null && !json.trim().isEmpty()) {
-                budgets = gson.fromJson(json, new TypeToken<List<Budget>>(){}.getType());
-                if (budgets == null) {
-                    budgets = new ArrayList<>();
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("加载预算数据失败: " + e.getMessage());
-            budgets = new ArrayList<>();
-        }
-    }
-    
-    /**
-     * 保存预算数据
-     */
-    private void saveBudgets() {
-        try {
-            String json = gson.toJson(budgets);
-            storageManager.writeFile(BUDGETS_FILE, json);
-        } catch (Exception e) {
-            System.err.println("保存预算数据失败: " + e.getMessage());
         }
     }
 }

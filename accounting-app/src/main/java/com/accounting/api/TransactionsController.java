@@ -12,7 +12,11 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/transactions")
 public class TransactionsController {
-    private final TransactionService transactionService = new TransactionService(new StorageManager());
+    private final TransactionService transactionService;
+
+    public TransactionsController(TransactionService transactionService) {
+        this.transactionService = transactionService;
+    }
 
     @GetMapping
     public ResponseEntity<List<Transaction>> list(

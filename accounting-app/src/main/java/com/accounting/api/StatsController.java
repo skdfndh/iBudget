@@ -13,8 +13,11 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/stats")
 public class StatsController {
-    private final TransactionService transactionService = new TransactionService(new StorageManager());
-    private final StatisticService statisticService = new StatisticService(transactionService);
+    private final StatisticService statisticService;
+
+    public StatsController(StatisticService statisticService) {
+        this.statisticService = statisticService;
+    }
 
     @GetMapping("/monthly")
     public ResponseEntity<Map<String, Object>> monthly(@RequestParam(defaultValue = "12") int months,

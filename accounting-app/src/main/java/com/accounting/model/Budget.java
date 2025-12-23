@@ -1,7 +1,11 @@
 package com.accounting.model;
 
 import com.google.gson.annotations.SerializedName;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.UUID;
 
@@ -9,7 +13,10 @@ import java.util.UUID;
  * 预算实体类
  * 支持月度预算设置
  */
+@Entity
+@Table(name = "budgets")
 public class Budget {
+    @Id
     @SerializedName("id")
     private String id;
     
@@ -29,16 +36,18 @@ public class Budget {
     private int month; // 1-12
     
     @SerializedName("createdAt")
-    private String createdAt;
+    private LocalDateTime createdAt;
     
     @SerializedName("updatedAt")
-    private String updatedAt;
+    private LocalDateTime updatedAt;
     
     public Budget() {
         this.id = UUID.randomUUID().toString();
         LocalDate now = LocalDate.now();
         this.year = now.getYear();
         this.month = now.getMonthValue();
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
     
     public Budget(String userId, String categoryId, double amount, int year, int month) {
@@ -102,19 +111,19 @@ public class Budget {
         return YearMonth.of(year, month);
     }
     
-    public String getCreatedAt() {
+    public LocalDateTime getCreatedAt() {
         return createdAt;
     }
     
-    public void setCreatedAt(String createdAt) {
+    public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
     }
     
-    public String getUpdatedAt() {
+    public LocalDateTime getUpdatedAt() {
         return updatedAt;
     }
     
-    public void setUpdatedAt(String updatedAt) {
+    public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
     }
     
