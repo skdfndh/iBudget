@@ -1,12 +1,14 @@
 package com.accounting.model;
 
 import com.google.gson.annotations.SerializedName;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 /**
@@ -40,6 +42,19 @@ public class Budget {
     
     @SerializedName("updatedAt")
     private LocalDateTime updatedAt;
+
+    // 新增周期式预算支持（向后兼容现有 year/month 字段）
+    @SerializedName("startDate")
+    @Column(name = "start_date")
+    private LocalDate startDate;
+
+    @SerializedName("periodUnit")
+    @Column(name = "period_unit")
+    private PeriodUnit periodUnit;
+
+    @SerializedName("periodCount")
+    @Column(name = "period_count")
+    private int periodCount = 1;
     
     public Budget() {
         this.id = UUID.randomUUID().toString();
@@ -132,6 +147,62 @@ public class Budget {
      */
     public boolean isTotalBudget() {
         return categoryId == null || categoryId.isEmpty();
+    }
+
+    public LocalDate getStartDate() {
+        return startDate;
+    }
+
+    public void setStartDate(LocalDate startDate) {
+        this.startDate = startDate;
+    }
+
+    public PeriodUnit getPeriodUnit() {
+        return periodUnit;
+    }
+
+    public void setPeriodUnit(PeriodUnit periodUnit) {
+        this.periodUnit = periodUnit;
+    }
+
+    public int getPeriodCount() {
+        return periodCount;
+    }
+
+    public void setPeriodCount(int periodCount) {
+        this.periodCount = periodCount;
+    }
+
+    public enum PeriodUnit {
+        DAYS, WEEKS, MONTHS, YEARS
+    }
+
+    /**
+     * 预算结束日期（包含）
+     */
+    public LocalDate getEndDate() {
+        if (startDate == null || periodUnit == null || periodCount <= 0) return null;
+        switch (periodUnit) {
+            case DAYS:
+                return startDate.plusDays(periodCount - 1);
+            case WEEKS:
+                return startDate.plusWeeks(periodCount).minusDays(1);
+            case MONTHS:
+                return startDate.plusMonths(periodCount).minusDays(1);
+            case YEARS:
+                return startDate.plusYears(periodCount).minusDays(1);
+            default:
+                return null;
+        }
+    }
+
+    /**
+     * 预算总天数（含首尾）
+     */
+    public long getTotalDays() {
+        LocalDate end = getEndDate();
+        if (startDate == null || end == null) return 0;
+        return ChronoUnit.DAYS.between(startDate, end) + 1;
     }
     
     @Override

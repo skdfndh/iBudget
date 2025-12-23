@@ -1,43 +1,41 @@
 package com.accounting.ui;
 
-import javafx.application.Application;
-import javafx.scene.Scene;
-import javafx.scene.control.Label;
-import javafx.scene.control.Button;
-import javafx.scene.control.TextField;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.TableView;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.control.CheckBox;
-import javafx.scene.control.Tab;
-import javafx.scene.control.TabPane;
-import javafx.scene.layout.VBox;
-import javafx.scene.layout.HBox;
-import javafx.stage.Stage;
-import com.accounting.storage.StorageManager;
-import com.accounting.service.TransactionService;
-import com.accounting.service.BudgetService;
-import com.accounting.service.StatisticService;
+import java.io.File;
+import java.time.LocalDateTime;
+import java.time.YearMonth;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import com.accounting.chart.ChartAnalyzer;
+import com.accounting.chart.ComboBarChartView;
+import com.accounting.chart.LineChartView;
+import com.accounting.chart.PieChartView;
+import com.accounting.model.Transaction;
+import com.accounting.model.Transaction.TransactionType;
 import com.accounting.service.local.LocalBudgetService;
 import com.accounting.service.local.LocalStatisticService;
 import com.accounting.service.local.LocalTransactionService;
-import com.accounting.chart.BarChartView;
-import com.accounting.chart.PieChartView;
-import com.accounting.chart.LineChartView;
-import com.accounting.chart.ComboBarChartView;
-import com.accounting.chart.ChartAnalyzer;
-import java.time.YearMonth;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Map;
-import java.time.LocalDateTime;
+import com.accounting.storage.StorageManager;
+
+import javafx.application.Application;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.Tab;
+import javafx.scene.control.TabPane;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TextField;
+import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
-import java.io.File;
-import com.accounting.model.Transaction;
-import com.accounting.model.Transaction.TransactionType;
+import javafx.stage.Stage;
 
 public class MainApplication extends Application {
     public static void main(String[] args) {
