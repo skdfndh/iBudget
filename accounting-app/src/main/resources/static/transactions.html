@@ -94,7 +94,13 @@
     <div class="surface" style="margin-bottom:16px">
         <div class="section-title">📝 新增/编辑账目</div>
         <div class="grid-3">
-            <div><label>类型</label><select id="txType"><option value="EXPENSE">支出</option><option value="INCOME">收入</option></select></div>
+            <div>
+                <label>类型</label>
+                <div class="toggle-group" style="margin-top:6px">
+                    <button class="toggle-btn active" data-value="EXPENSE">支出</button>
+                    <button class="toggle-btn" data-value="INCOME">收入</button>
+                </div>
+            </div>
             <div><label>金额</label><input id="txAmount" type="number" step="0.01"></div>
             <div><label>分类</label><input id="txCategory"></div>
             <div style="grid-column:1/-1"><label>描述</label><input id="txDesc"></div>
@@ -116,7 +122,14 @@
             <div><label>开始时间</label><input id="fStart" class="dt-trigger" placeholder="起始时间"></div>
             <div><label>结束时间</label><input id="fEnd" class="dt-trigger" placeholder="结束时间"></div>
             <div><label>分类搜索</label><input id="fCategory" placeholder="输入分类"></div>
-            <div><label>类型</label><select id="fType"><option value="">全部</option><option value="EXPENSE">支出</option><option value="INCOME">收入</option></select></div>
+            <div>
+                <label>类型</label>
+                <div class="toggle-group" style="margin-top:6px">
+                    <button class="toggle-btn active" data-value="">全部</button>
+                    <button class="toggle-btn" data-value="EXPENSE">支出</button>
+                    <button class="toggle-btn" data-value="INCOME">收入</button>
+                </div>
+            </div>
         </div>
         <div class="hint" style="margin-top:8px;margin-bottom:8px">提示:日期筛选需要同时填写开始和结束时间,格式: YYYY-MM-DDTHH:mm:ss</div>
         <div style="margin-top:16px; display:flex; gap:12px;">
@@ -220,7 +233,6 @@
     }
 
     // 获取DOM元素
-    const txType = document.getElementById('txType');
     const txAmount = document.getElementById('txAmount');
     const txCategory = document.getElementById('txCategory');
     const txDesc = document.getElementById('txDesc');
@@ -228,15 +240,34 @@
     const fStart = document.getElementById('fStart');
     const fEnd = document.getElementById('fEnd');
     const fCategory = document.getElementById('fCategory');
-    const fType = document.getElementById('fType');
 
     let editingId = null;
+    let txTypeValue = 'EXPENSE'; // 账目类型
+    let fTypeValue = ''; // 筛选类型
+
+    // 账目类型切换按钮
+    document.querySelectorAll('.surface')[0].querySelectorAll('.toggle-btn').forEach(btn => {
+        btn.onclick = () => {
+            document.querySelectorAll('.surface')[0].querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            txTypeValue = btn.getAttribute('data-value');
+        };
+    });
+
+    // 筛选类型切换按钮
+    document.querySelectorAll('.surface')[1].querySelectorAll('.toggle-btn').forEach(btn => {
+        btn.onclick = () => {
+            document.querySelectorAll('.surface')[1].querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            fTypeValue = btn.getAttribute('data-value');
+        };
+    });
 
     // 保存账目
     document.getElementById('btnSaveTx').onclick = async () => {
         try {
             const payload = {
-                type: txType.value,
+                type: txTypeValue,
                 amount: parseFloat(txAmount.value || '0'),
                 categoryId: txCategory.value || null,
                 description: txDesc.value || '',
@@ -253,7 +284,12 @@
 
             // 重置表单
             editingId = null;
-            txType.value = 'EXPENSE';
+            txTypeValue = 'EXPENSE';
+            // 重置按钮状态
+            document.querySelectorAll('.surface')[0].querySelectorAll('.toggle-btn').forEach((b, i) => {
+                if (i === 0) b.classList.add('active');
+                else b.classList.remove('active');
+            });
             txAmount.value = '';
             txCategory.value = '';
             txDesc.value = '';
@@ -269,7 +305,12 @@
     // 重置表单
     document.getElementById('btnResetTx').onclick = () => {
         editingId = null;
-        txType.value = 'EXPENSE';
+        txTypeValue = 'EXPENSE';
+        // 重置按钮状态
+        document.querySelectorAll('.surface')[0].querySelectorAll('.toggle-btn').forEach((b, i) => {
+            if (i === 0) b.classList.add('active');
+            else b.classList.remove('active');
+        });
         txAmount.value = '';
         txCategory.value = '';
         txDesc.value = '';
@@ -302,7 +343,7 @@
                 return;
             }
             if (fCategory.value) params.set('categoryId', fCategory.value);
-            if (fType.value) params.set('type', fType.value);
+            if (fTypeValue) params.set('type', fTypeValue);
 
             const url = params.toString() ? base + '/transactions?' + params.toString() : base + '/transactions';
             console.log('查询URL:', url);
@@ -368,7 +409,15 @@
                     const tx = arr.find(t => t.id === id);
                     if (tx) {
                         editingId = id;
-                        txType.value = tx.type;
+                        txTypeValue = tx.type;
+                        // 更新按钮状态
+                        document.querySelectorAll('.surface')[0].querySelectorAll('.toggle-btn').forEach(b => {
+                            if (b.getAttribute('data-value') === tx.type) {
+                                b.classList.add('active');
+                            } else {
+                                b.classList.remove('active');
+                            }
+                        });
                         txAmount.value = tx.amount;
                         txCategory.value = tx.categoryId || '';
                         txDesc.value = tx.description || '';
@@ -395,7 +444,7 @@
             start: fStart.value,
             end: fEnd.value,
             category: fCategory.value,
-            type: fType.value
+            type: fTypeValue
         });
         loadTransactions();
     };
@@ -404,7 +453,12 @@
         fStart.value = '';
         fEnd.value = '';
         fCategory.value = '';
-        fType.value = '';
+        fTypeValue = '';
+        // 重置按钮状态
+        document.querySelectorAll('.surface')[1].querySelectorAll('.toggle-btn').forEach((b, i) => {
+            if (i === 0) b.classList.add('active');
+            else b.classList.remove('active');
+        });
         loadTransactions();
     };
 
