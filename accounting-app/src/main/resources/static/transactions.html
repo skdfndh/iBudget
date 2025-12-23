@@ -118,6 +118,7 @@
             <div><label>分类搜索</label><input id="fCategory" placeholder="输入分类"></div>
             <div><label>类型</label><select id="fType"><option value="">全部</option><option value="EXPENSE">支出</option><option value="INCOME">收入</option></select></div>
         </div>
+        <div class="hint" style="margin-top:8px;margin-bottom:8px">提示:日期筛选需要同时填写开始和结束时间,格式: YYYY-MM-DDTHH:mm:ss</div>
         <div style="margin-top:16px; display:flex; gap:12px;">
             <button class="btn btn-primary" id="btnApplyFilters">执行筛选</button>
             <button class="btn" id="btnClearFilters">重置筛选</button>
@@ -280,12 +281,31 @@
         try {
             // 构建查询参数
             const params = new URLSearchParams();
-            if (fStart.value) params.set('startDate', fStart.value);
-            if (fEnd.value) params.set('endDate', fEnd.value);
+            if (fStart.value) {
+                // 确保时间格式正确
+                if (!fStart.value.includes('T')) {
+                    alert('❌ 开始时间格式不正确,需要包含时间部分(如: 2025-12-01T00:00:00)');
+                    return;
+                }
+                params.set('start', fStart.value);
+            }
+            if (fEnd.value) {
+                if (!fEnd.value.includes('T')) {
+                    alert('❌ 结束时间格式不正确,需要包含时间部分(如: 2025-12-31T23:59:59)');
+                    return;
+                }
+                params.set('end', fEnd.value);
+            }
+            // 注意:后端需要同时提供start和end才能进行日期筛选
+            if ((fStart.value && !fEnd.value) || (!fStart.value && fEnd.value)) {
+                alert('⚠️ 日期筛选需要同时填写开始和结束时间');
+                return;
+            }
             if (fCategory.value) params.set('categoryId', fCategory.value);
             if (fType.value) params.set('type', fType.value);
 
             const url = params.toString() ? base + '/transactions?' + params.toString() : base + '/transactions';
+            console.log('查询URL:', url);
             const arr = await fetchJSON(url);
 
             // 创建表格显示(如果没有表格容器,先创建一个)
@@ -371,6 +391,12 @@
 
     // 筛选按钮
     document.getElementById('btnApplyFilters').onclick = () => {
+        console.log('执行筛选:', {
+            start: fStart.value,
+            end: fEnd.value,
+            category: fCategory.value,
+            type: fType.value
+        });
         loadTransactions();
     };
 
