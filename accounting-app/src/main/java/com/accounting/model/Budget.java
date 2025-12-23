@@ -3,6 +3,8 @@ package com.accounting.model;
 import com.google.gson.annotations.SerializedName;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.EnumType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.LocalDate;
@@ -50,6 +52,7 @@ public class Budget {
 
     @SerializedName("periodUnit")
     @Column(name = "period_unit")
+    @Enumerated(EnumType.STRING)
     private PeriodUnit periodUnit;
 
     @SerializedName("periodCount")
