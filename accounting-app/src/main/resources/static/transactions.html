@@ -6,7 +6,16 @@
     <title>账目 · iBudget</title>
     <style>
         :root{--bg:#f7f8f9;--card:#ffffff;--text:#0f172a;--muted:#64748b;--line:#e5e7eb;--accent:#0a84ff}
-        [data-theme="dark"]{--bg:#0b0e11;--card:#12151a;--text:#e5e7eb;--muted:#94a3b8;--line:#2a2f37;--accent:#0a84ff}
+
+        [data-theme="dark"] {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --text: #f8fafc;
+            --muted: #94a3b8;
+            --line: #334155;
+            --accent: #38bdf8;
+        }
+
         *{box-sizing:border-box}
         body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,system-ui}
         .container{max-width:1080px;margin:0 auto;padding:24px}
@@ -16,9 +25,12 @@
         .section-title{display:flex;align-items:center;gap:8px;margin:0 0 12px 0;font-size:16px;font-weight:600}
         .grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
         .grid-4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
-        label{font-size:12px;color:var(--muted)}
-        input,select{width:100%;padding:12px;border:1px solid var(--line);border-radius:12px;outline:none;background:#fff;color:var(--text)}
-        input:focus{border-color:var(--accent);box-shadow: 0 0 0 2px rgba(10,132,255,0.1)}
+
+        label{font-size:12px;color:var(--muted);font-weight: 600; margin-bottom: 4px; display: block;}
+
+        input,select{width:100%;padding:12px;border:1px solid var(--line);border-radius:12px;outline:none;background:#fff;color:var(--text);font-size: 14px;}
+        [data-theme="dark"] input, [data-theme="dark"] select { background: #0f172a; }
+        input:focus{border-color:var(--accent);box-shadow: 0 0 0 2px rgba(56,189,248,0.2)}
 
         /* 日历浮窗样式 */
         .datepicker-popover {
@@ -26,32 +38,38 @@
             z-index: 1000;
             width: 280px;
             background: var(--card);
-            border: 1px solid var(--line);
+            border: 2px solid var(--line);
             border-radius: 16px;
             padding: 15px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
             display: none;
         }
-        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; text-align: center; }
-        .cal-day-head { font-size: 11px; color: var(--muted); padding: 5px 0; font-weight: 600; }
-        .cal-date { padding: 8px 0; border-radius: 8px; cursor: pointer; transition: 0.2s; font-size: 13px; border: 1px solid transparent; }
+        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
+        .cal-day-head { font-size: 11px; color: var(--muted); padding: 5px 0; font-weight: 700; }
+        .cal-date { padding: 8px 0; border-radius: 8px; cursor: pointer; transition: 0.2s; font-size: 13px; color: var(--text); border: 1px solid transparent; }
         .cal-date:hover { background: var(--bg); border-color: var(--accent); }
-        .cal-today { color: var(--accent); font-weight: bold; background: #0a84ff15; }
-        .cal-selected { background: var(--accent) !important; color: #fff !important; }
 
-        .table{width:100%;border-collapse:separate;border-spacing:0 8px}
-        .table td{background:#fff;border:1px solid var(--line);padding:12px 10px}
-        .btn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:#fff;color:var(--text);padding:10px 14px;border-radius:12px;cursor:pointer}
-        .btn-primary{background:var(--accent);border-color:var(--accent);color:#fff}
+        .cal-today {
+            color: var(--accent) !important;
+            font-weight: 800 !important;
+            background: rgba(56, 189, 248, 0.15);
+            border: 1.5px solid var(--accent) !important;
+        }
+
+        .btn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:#fff;color:var(--text);padding:10px 14px;border-radius:12px;cursor:pointer;font-weight: 600}
+        [data-theme="dark"] .btn:not(.btn-primary) { background: #1e293b; }
+        .btn-primary{background:var(--accent);border-color:var(--accent);color:#0f172a}
+
+        .hint { font-size: 10px; color: var(--muted); margin-top: 4px; }
     </style>
 </head>
 <body>
 
 <div id="calendarPopover" class="datepicker-popover">
-    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-        <button class="btn" style="padding: 2px 8px" id="calPrevMonth">«</button>
-        <div id="calHeader" style="font-weight: bold; font-size: 0.9rem;"></div>
-        <button class="btn" style="padding: 2px 8px" id="calNextMonth">»</button>
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+        <button class="btn" style="padding: 4px 10px" id="calPrevMonth">«</button>
+        <div id="calHeader" style="font-weight: 800; font-size: 14px; color: var(--text);"></div>
+        <button class="btn" style="padding: 4px 10px" id="calNextMonth">»</button>
     </div>
     <div class="cal-grid">
         <div class="cal-day-head">一</div><div class="cal-day-head">二</div><div class="cal-day-head">三</div>
@@ -63,60 +81,51 @@
 
 <div class="container">
     <div class="header">
-        <div>iBudget</div>
+        <div style="font-weight: 900; font-size: 1.5rem;">iBudget</div>
         <div class="nav">
             <a href="/transactions.html">账目</a>
             <a href="/budgets.html">预算</a>
             <a href="/trends.html">趋势</a>
             <a href="/charts.html">图表</a>
-            <a href="/login.html">切换账号</a>
-            <a href="#" id="themeToggle">切换主题</a>
+            <a href="#" id="themeToggle" style="color: var(--accent); font-weight: 800; margin-left: 20px;">切换主题</a>
         </div>
     </div>
 
     <div class="surface" style="margin-bottom:16px">
-        <div class="section-title">本月概览</div>
-        <div class="grid-4">
-            <div><label>净额</label><input id="sumNet" disabled></div>
-            <div><label>总收入</label><input id="sumInc" disabled></div>
-            <div><label>总支出</label><input id="sumExp" disabled></div>
-            <div><label>预算使用率</label><input id="sumRate" disabled></div>
-        </div>
-    </div>
-
-    <div class="surface" style="margin-bottom:16px">
-        <div class="section-title">新增/编辑账目</div>
+        <div class="section-title">📝 新增/编辑账目</div>
         <div class="grid-3">
             <div><label>类型</label><select id="txType"><option value="EXPENSE">支出</option><option value="INCOME">收入</option></select></div>
             <div><label>金额</label><input id="txAmount" type="number" step="0.01"></div>
             <div><label>分类</label><input id="txCategory"></div>
             <div style="grid-column:1/-1"><label>描述</label><input id="txDesc"></div>
             <div style="grid-column:1/-1">
-                <label>日期时间 (YYYY-MM-DDTHH:mm:ss)</label>
-                <input id="txDate" class="dt-trigger" placeholder="2025-12-23T12:00:00">
+                <label>日期与时间 (可点击日历后手动修改 T 后的数值)</label>
+                <input id="txDate" class="dt-trigger" placeholder="YYYY-MM-DDTHH:mm:ss">
+                <div class="hint">示例格式：2025-12-23T14:30:00</div>
             </div>
         </div>
-        <div class="stack" style="margin-top:12px; display:flex; gap:10px;">
-            <button class="btn btn-primary" id="btnSaveTx">保存</button>
-            <button class="btn" id="btnResetTx">重置</button>
+        <div style="margin-top:16px; display:flex; gap:12px;">
+            <button class="btn btn-primary" id="btnSaveTx">保存账目</button>
+            <button class="btn" id="btnResetTx">重置输入</button>
         </div>
     </div>
 
-    <div class="surface">
-        <div class="section-title">查询过滤</div>
+    <div class="surface" style="margin-bottom:16px">
+        <div class="section-title">🔍 查询过滤</div>
         <div class="grid-4">
-            <div><label>开始时间</label><input id="fStart" class="dt-trigger" placeholder="2025-01-01T00:00:00"></div>
-            <div><label>结束时间</label><input id="fEnd" class="dt-trigger" placeholder="2025-12-31T23:59:59"></div>
+            <div><label>开始时间</label><input id="fStart" class="dt-trigger" placeholder="起始时间"></div>
+            <div><label>结束时间</label><input id="fEnd" class="dt-trigger" placeholder="结束时间"></div>
+            <div><label>分类搜索</label><input id="fCategory" placeholder="输入分类"></div>
+            <div><label>类型</label><select id="fType"><option value="">全部</option><option value="EXPENSE">支出</option><option value="INCOME">收入</option></select></div>
         </div>
-        <div class="stack" style="margin-top:12px; display:flex; gap:10px;">
-            <button class="btn btn-primary" id="btnApplyFilters">筛选</button>
-            <button class="btn" id="btnClearFilters">清除</button>
+        <div style="margin-top:16px; display:flex; gap:12px;">
+            <button class="btn btn-primary" id="btnApplyFilters">执行筛选</button>
+            <button class="btn" id="btnClearFilters">重置筛选</button>
         </div>
     </div>
 </div>
 
 <script>
-    // --- 日历与输入联动逻辑 ---
     let displayDate = new Date();
     let activeInput = null;
     const popover = document.getElementById('calendarPopover');
@@ -129,6 +138,7 @@
         const month = displayDate.getMonth();
         header.innerText = `${year}年 ${month + 1}月`;
 
+        const now = new Date();
         const firstDay = new Date(year, month, 1).getDay();
         const startOffset = firstDay === 0 ? 6 : firstDay - 1;
         const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -138,21 +148,23 @@
         for (let d = 1; d <= daysInMonth; d++) {
             const div = document.createElement('div');
             div.className = 'cal-date';
+            if (year === now.getFullYear() && month === now.getMonth() && d === now.getDate()) div.classList.add('cal-today');
             div.innerText = d;
 
             div.onclick = (e) => {
                 e.stopPropagation();
                 const datePart = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 
-                // 提取原有的时间部分，若无则给默认值
+                // 智能保留时间逻辑：如果用户已经输入了时间，保留它；否则默认12点
                 let timePart = "12:00:00";
-                if (activeInput.value.includes('T')) {
-                    timePart = activeInput.value.split('T')[1];
+                if (activeInput.value && activeInput.value.includes('T')) {
+                    const parts = activeInput.value.split('T');
+                    if (parts[1]) timePart = parts[1];
                 }
 
                 activeInput.value = `${datePart}T${timePart}`;
                 hideCalendar();
-                activeInput.focus(); // 选完日期后焦点回到输入框，方便用户立即修改时分秒
+                activeInput.focus(); // 选中后焦点回到输入框，方便键入时分秒
             };
             grid.appendChild(div);
         }
@@ -162,17 +174,16 @@
         activeInput = input;
         const rect = input.getBoundingClientRect();
         popover.style.display = 'block';
-        popover.style.top = (rect.bottom + window.scrollY + 5) + 'px';
+        popover.style.top = (rect.bottom + window.scrollY + 8) + 'px';
         popover.style.left = (rect.left + window.scrollX) + 'px';
         renderCalendar();
     }
 
     function hideCalendar() { popover.style.display = 'none'; }
 
-    // 绑定事件：点击输入框弹出，但允许键入
+    // 绑定点击事件，但不锁定输入（去掉了 readonly）
     document.querySelectorAll('.dt-trigger').forEach(el => {
-        el.addEventListener('focus', () => showCalendar(el));
-        el.addEventListener('click', (e) => { e.stopPropagation(); showCalendar(el); });
+        el.onclick = (e) => { e.stopPropagation(); showCalendar(el); };
     });
 
     document.addEventListener('click', (e) => {
@@ -182,53 +193,13 @@
     document.getElementById('calPrevMonth').onclick = (e) => { e.stopPropagation(); displayDate.setMonth(displayDate.getMonth() - 1); renderCalendar(); };
     document.getElementById('calNextMonth').onclick = (e) => { e.stopPropagation(); displayDate.setMonth(displayDate.getMonth() + 1); renderCalendar(); };
 
-    // --- 基础 API 交互逻辑 ---
-    const base='/api';
-    const token=localStorage.getItem('jwt');
-
-    async function fetchJSON(url,opts){
-        const r=await fetch(url,{...opts,headers:{...(opts?.headers||{}),'Content-Type':'application/json','Authorization':'Bearer '+token}})
-        return r.ok ? (r.status===204?null:await r.json()) : null;
-    }
-
     document.getElementById('themeToggle').onclick=(e)=>{
         e.preventDefault();
         const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
         document.documentElement.dataset.theme = t;
         localStorage.setItem('theme', t);
     };
-
-    // 初始化主题
     document.documentElement.dataset.theme = localStorage.getItem('theme') || 'light';
-
-    // 保存账目
-    document.getElementById('btnSaveTx').onclick = async () => {
-        const payload = {
-            type: document.getElementById('txType').value,
-            amount: parseFloat(document.getElementById('txAmount').value),
-            categoryId: document.getElementById('txCategory').value,
-            description: document.getElementById('txDesc').value,
-            date: document.getElementById('txDate').value
-        };
-        await fetchJSON(base + '/transactions', {method:'POST', body:JSON.stringify(payload)});
-        alert('保存成功');
-    };
-
-    document.getElementById('btnResetTx').onclick = () => {
-        document.querySelectorAll('.surface input').forEach(i => i.value = '');
-    };
-
-    async function loadSummary(){
-        const d = new Date();
-        const data = await fetchJSON(base+`/stats/month?year=${d.getFullYear()}&month=${d.getMonth()+1}`);
-        if(data) {
-            document.getElementById('sumNet').value = data.netAmount.toFixed(2);
-            document.getElementById('sumInc').value = data.totalIncome.toFixed(2);
-            document.getElementById('sumExp').value = data.totalExpense.toFixed(2);
-        }
-    }
-
-    loadSummary();
 </script>
 </body>
 </html>
