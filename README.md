@@ -182,3 +182,197 @@ accounting-app/
 
 本项目用于学习与个人使用。
 
+## 📐 UML 图
+
+### 架构组件图（PlantUML）
+
+```plantuml
+@startuml
+title iBudget 架构组件图
+
+package "Clients" {
+  [Web (HTML/JS)] as Web
+  [Desktop (JavaFX)] as Desktop
+  component ApiClient
+  Desktop --> ApiClient
+  Web --> API
+  ApiClient --> API
+}
+
+package "Backend" {
+  component "AuthController" as AuthC
+  component "TransactionsController" as TxC
+  component "BudgetController" as BdC
+  component "StatsController" as StC
+  component "SyncController" as SyC
+  component "SecurityConfig" as Sec
+  component "JwtAuthenticationFilter" as JwtF
+  component "JwtUtil" as JwtU
+  component "UserService" as UserS
+  component "TransactionService" as TxS
+  component "BudgetService" as BdS
+  component "StatisticService" as StS
+  component "SyncService" as SyS
+  component "Repositories (JPA)" as Repo
+  database "SQLite" as DB
+  
+  AuthC --> UserS
+  AuthC --> JwtU
+  TxC --> TxS
+  BdC --> BdS
+  StC --> StS
+  SyC --> SyS
+  SyS --> Repo
+  TxS --> Repo
+  BdS --> Repo
+  StS --> Repo
+  Repo --> DB
+  Sec --> JwtF
+  
+  [API Layer] as API
+  API --> AuthC
+  API --> TxC
+  API --> BdC
+  API --> StC
+  API --> SyC
+}
+@enduml
+```
+
+### 类图（PlantUML）
+
+```plantuml
+@startuml
+title iBudget 核心类图
+
+class AuthController <<controller>>
+class TransactionsController <<controller>>
+class BudgetController <<controller>>
+class StatsController <<controller>>
+class SyncController <<controller>>
+
+class UserService <<service>>
+class TransactionService <<service>>
+class BudgetService <<service>>
+class StatisticService <<service>>
+class SyncService <<service>>
+class JwtUtil <<utility>>
+
+interface UserRepository <<repository>>
+interface TransactionRepository <<repository>>
+interface BudgetRepository <<repository>>
+interface SyncLogRepository <<repository>>
+interface UserTokenRepository <<repository>>
+
+AuthController ..> UserService
+AuthController ..> JwtUtil
+AuthController ..> UserTokenRepository
+SyncController ..> SyncService
+TransactionsController ..> TransactionService
+BudgetController ..> BudgetService
+StatsController ..> StatisticService
+
+SyncService ..> TransactionRepository
+SyncService ..> SyncLogRepository
+TransactionService ..> TransactionRepository
+BudgetService ..> BudgetRepository
+StatisticService ..> TransactionRepository
+
+class User {
+  +id: String
+  +username: String
+  +passwordHash: String
+  +recoveryKey: String
+}
+
+class UserToken {
+  +userId: String
+  +token: String
+  +deviceId: String
+  +expiryDate: LocalDateTime
+}
+
+class Transaction {
+  +id: String
+  +userId: String
+  +type: String
+  +amount: double
+  +categoryId: String
+  +date: LocalDateTime
+  +updatedAt: LocalDateTime
+  +tags: String
+}
+
+class Budget {
+  +id: String
+  +userId: String
+  +categoryId: String
+  +year: int
+  +month: int
+  +amount: double
+}
+
+class SyncLog {
+  +id: String
+  +userId: String
+  +entityId: String
+  +action: String
+  +version: long
+  +timestamp: LocalDateTime
+}
+
+User "1" --> "*" UserToken : owns
+User "1" --> "*" Transaction
+User "1" --> "*" Budget
+Transaction "*" --> "0..1" SyncLog
+@enduml
+```
+
+### 登录时序图（PlantUML）
+
+```plantuml
+@startuml
+title /api/auth/login 登录流程
+actor Client
+participant AuthController as A
+participant UserService as U
+participant JwtUtil as J
+participant UserTokenRepository as T
+
+Client -> A : POST /api/auth/login {username,password,deviceId}
+A -> U : login(username,password)
+U --> A : user or null
+alt 成功
+  A -> J : generate(userId, ACCESS_TOKEN_TTL)
+  A -> T : save(refreshToken, deviceId, expiry)
+  A --> Client : {accessToken, refreshToken, userId, username}
+else 失败
+  A --> Client : 401 Unauthorized
+end
+@enduml
+```
+
+### 同步时序图（PlantUML）
+
+```plantuml
+@startuml
+title /api/sync 推送与合并
+actor Client
+participant SyncController as S
+participant SyncService as Y
+participant TransactionRepository as TR
+participant SyncLogRepository as SL
+
+Client -> S : POST /api/sync [transactions]
+S -> Y : push(userId, incomingList)
+loop 每条交易
+  Y -> TR : updateIfNewer(id, ..., updatedAt)
+  alt 新增或更新
+    Y -> SL : save(userId, entityId, action, version)
+  end
+end
+Y --> S : {version}
+S --> Client : {version}
+@enduml
+```
+
