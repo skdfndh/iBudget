@@ -136,16 +136,17 @@ public class SyncService {
             }
         }
     }
-    
+
     private void saveAndLog(Transaction transaction, SyncLog.Action action, Long version) {
         Transaction saved = transactionRepository.save(transaction);
+        
         SyncLog log = new SyncLog(
-                saved.getId(),
-                saved.getUserId(),
-                action,
-                "Transaction",
-                gson.toJson(saved),
-                version
+            saved.getId(),
+            saved.getUserId(),
+            action,
+            "Transaction",
+            gson.toJson(saved),
+            version
         );
         syncLogRepository.save(log);
     }
