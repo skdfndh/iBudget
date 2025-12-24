@@ -5,15 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>账目 · iBudget</title>
     <style>
-        :root{--bg:#f7f8f9;--card:#ffffff;--text:#0f172a;--muted:#64748b;--line:#e5e7eb;--accent:#0a84ff}
-
-        [data-theme="dark"] {
-            --bg: #0f172a;
-            --card: #1e293b;
-            --text: #f8fafc;
-            --muted: #94a3b8;
-            --line: #334155;
-            --accent: #38bdf8;
+        :root{
+            --bg:#f7f8f9;
+            --card:#ffffff;
+            --text:#334455; /* 从#0f172a调整为较浅的#334455，提升浅色模式可读性 */
+            --muted:#64748b;
+            --line:#e5e7eb;
+            --accent:#0a84ff;
+            --warn:#d33
+        }
+        [data-theme="dark"]{
+            --bg:#0f172a;
+            --card:#1e293b;
+            --text:#f8fafc; /* 深色模式保持不变 */
+            --muted:#94a3b8;
+            --line:#334155;
+            --accent:#38bdf8;
+            --warn:#ef4444
         }
 
         *{box-sizing:border-box}
@@ -107,7 +115,7 @@
                     <button class="toggle-btn" data-value="INCOME">收入</button>
                 </div>
             </div>
-            <div><label>金额</label><input id="txAmount" type="number" step="0.01"></div>
+            <div><label>金额</label><input id="txAmount" type="number" min="0"></div>
             <div><label>分类</label><input id="txCategory"></div>
             <div style="grid-column:1/-1"><label>描述</label><input id="txDesc"></div>
             <div style="grid-column:1/-1">
@@ -247,6 +255,37 @@
     const fEnd = document.getElementById('fEnd');
     const fCategory = document.getElementById('fCategory');
 
+    // 金额核心控制：非负、最多两位小数、动态精度
+    txAmount.oninput = () => {
+        let val = txAmount.value;
+
+        // 1. 限制最多两位小数
+        if (val.includes('.')) {
+            const parts = val.split('.');
+            if (parts[1].length > 2) {
+                val = parts[0] + '.' + parts[1].slice(0, 2);
+                txAmount.value = val;
+            }
+        }
+
+        // 2. 动态调整箭头增减精度 (Step)
+        if (!val || !val.includes('.')) {
+            txAmount.step = "1";
+        } else {
+            const decimalLen = val.split('.')[1].length;
+            // 如果有一位小数，步长0.1；有两位，步长0.01
+            txAmount.step = Math.pow(10, -decimalLen).toString();
+        }
+    };
+
+    txAmount.onchange = () => {
+        // 离开焦点时，如果是负数强制归零
+        if (parseFloat(txAmount.value) < 0) {
+            txAmount.value = 0;
+        }
+    };
+    txAmount.step = "1"; // 默认初始步进
+
     let editingId = null;
     let txTypeValue = 'EXPENSE'; // 账目类型
     let fTypeValue = ''; // 筛选类型
@@ -272,9 +311,14 @@
     // 保存账目
     document.getElementById('btnSaveTx').onclick = async () => {
         try {
+            const amountVal = parseFloat(txAmount.value || '0');
+            if (amountVal < 0) {
+                alert('❌ 金额不能为负数');
+                return;
+            }
             const payload = {
                 type: txTypeValue,
-                amount: parseFloat(txAmount.value || '0'),
+                amount: amountVal,
                 categoryId: txCategory.value || null,
                 description: txDesc.value || '',
                 date: txDate.value ? txDate.value : null
@@ -297,6 +341,7 @@
                 else b.classList.remove('active');
             });
             txAmount.value = '';
+            txAmount.step = "1";
             txCategory.value = '';
             txDesc.value = '';
             txDate.value = '';
@@ -318,6 +363,7 @@
             else b.classList.remove('active');
         });
         txAmount.value = '';
+        txAmount.step = "1";
         txCategory.value = '';
         txDesc.value = '';
         txDate.value = '';
@@ -429,6 +475,8 @@
                         txDesc.value = tx.description || '';
                         txDate.value = tx.date || '';
                         window.scrollTo({ top: 0, behavior: 'smooth' });
+                        // 触发精度控制逻辑
+                        txAmount.oninput();
                     }
                 } else if (action === 'del') {
                     if (confirm('确定要删除这条账目吗?')) {
