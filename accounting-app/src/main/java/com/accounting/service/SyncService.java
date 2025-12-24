@@ -112,39 +112,16 @@ public class SyncService {
     }
 
     private void processIncomingTransaction(String userId, Transaction incoming, Long currentVersion) {
-        incoming.setUserId(userId); // Ensure user ID consistency
+        incoming.setUserId(userId);
         if (incoming.getUpdatedAt() == null) {
             incoming.setUpdatedAt(LocalDateTime.now());
         }
-        
         Transaction existing = transactionRepository.findById(incoming.getId()).orElse(null);
-        
         if (existing == null) {
-            // New transaction
             saveAndLog(incoming, SyncLog.Action.ADD, currentVersion + 1);
         } else {
-            // Conflict resolution: Last Write Wins based on updatedAt
-            // 冲突解决：基于时间戳的“最后写入胜出”策略
-            // 只有当传入数据的更新时间 晚于 现有数据时，才执行更新
-            // int affected = transactionRepository.updateIfNewer(...); 
-            // (注：此处伪代码，实际逻辑需根据 Repository 实现调整)
-            // 为简化演示，这里直接保存
-            saveAndLog(incoming, SyncLog.Action.UPDATE, currentVersion + 1);
-        }
-    }
-    
-    private void saveAndLog(Transaction tx, SyncLog.Action action, Long version) {
-        transactionRepository.save(tx);
-        // 记录同步日志，用于后续让其他端拉取增量
-        SyncLog log = new SyncLog();
-        log.setUserId(tx.getUserId());
-        log.setEntityId(tx.getId());
-        log.setAction(action);
-        log.setVersion(version);
-        log.setChangeData(gson.toJson(tx));
-        log.setOccurredAt(LocalDateTime.now());
-        syncLogRepository.save(log);
-    }                    incoming.getId(),
+            int affected = transactionRepository.updateIfNewer(
+                    incoming.getId(),
                     incoming.getUserId(),
                     incoming.getType(),
                     incoming.getAmount(),
@@ -155,23 +132,20 @@ public class SyncService {
                     incoming.getTags()
             );
             if (affected > 0) {
-                // Log update only if DB update applied
                 saveAndLog(incoming, SyncLog.Action.UPDATE, currentVersion + 1);
             }
-            // If existing is newer, ignore incoming (or could log a conflict)
         }
     }
-
+    
     private void saveAndLog(Transaction transaction, SyncLog.Action action, Long version) {
         Transaction saved = transactionRepository.save(transaction);
-        
         SyncLog log = new SyncLog(
-            saved.getId(),
-            saved.getUserId(),
-            action,
-            "Transaction",
-            gson.toJson(saved),
-            version
+                saved.getId(),
+                saved.getUserId(),
+                action,
+                "Transaction",
+                gson.toJson(saved),
+                version
         );
         syncLogRepository.save(log);
     }
