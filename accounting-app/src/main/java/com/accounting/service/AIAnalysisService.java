@@ -165,6 +165,6 @@ public class AIAnalysisService {
             }
         }
         
-        throw new Exception("API调用失败: " + response.statusCode());
+        throw new Exception("API调用失败: " + response.statusCode() + " | " + response.body());
     }
 }

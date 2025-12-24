@@ -70,16 +70,30 @@ public class BudgetService {
      * 获取指定月份的总预算
      */
     public Budget getTotalBudget(String userId, int year, int month) {
-        return budgetRepository.findByUserIdAndCategoryIdIsNullAndYearAndMonth(userId, year, month)
-                .orElse(null);
+        List<Budget> budgets = budgetRepository.findByUserIdAndCategoryIdIsNullAndYearAndMonth(userId, year, month);
+        if (budgets.isEmpty()) return null;
+        if (budgets.size() > 1) {
+            // 自动清理重复数据
+            for (int i = 1; i < budgets.size(); i++) {
+                budgetRepository.delete(budgets.get(i));
+            }
+        }
+        return budgets.get(0);
     }
     
     /**
      * 获取指定月份的分类预算
      */
     public Budget getCategoryBudget(String userId, String categoryId, int year, int month) {
-        return budgetRepository.findByUserIdAndCategoryIdAndYearAndMonth(userId, categoryId, year, month)
-                .orElse(null);
+        List<Budget> budgets = budgetRepository.findByUserIdAndCategoryIdAndYearAndMonth(userId, categoryId, year, month);
+        if (budgets.isEmpty()) return null;
+        if (budgets.size() > 1) {
+            // 自动清理重复数据
+            for (int i = 1; i < budgets.size(); i++) {
+                budgetRepository.delete(budgets.get(i));
+            }
+        }
+        return budgets.get(0);
     }
     
     /**
